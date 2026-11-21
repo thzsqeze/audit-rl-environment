@@ -84,8 +84,8 @@ def evidence_index(public: dict[str, Any]) -> set[str]:
 def truth_errors(public: dict[str, Any], truth: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     known = evidence_index(public)
-    found = {(f["type"], tuple(f["affected_ids"])): f for f in detect_all(public)}
-    declared = {(t["type"], tuple(t["affected_ids"])): t for t in truth["issues"]}
+    found = {(f["type"], tuple(sorted(f["affected_ids"]))): f for f in detect_all(public)}
+    declared = {(t["type"], tuple(sorted(t["affected_ids"]))): t for t in truth["issues"]}
     for key in found.keys() - declared.keys():
         errors.append(f"undeclared discrepancy derivable from records: {key}")
     for key, t in declared.items():
@@ -98,7 +98,7 @@ def truth_errors(public: dict[str, Any], truth: dict[str, Any]) -> list[str]:
             errors.append(f"{t['issue_id']}: declared discrepancy not derivable from records")
             continue
         if f["currency"] != t["currency"] or abs(f["claimed_amount_minor"] - t["expected_amount_minor"]) > \
-                truth["amount_tolerance_minor"]:
+                truth.get("amount_tolerance_minor", 0):
             errors.append(f"{t['issue_id']}: derived amount {f['claimed_amount_minor']} {f['currency']} != "
                           f"declared {t['expected_amount_minor']} {t['currency']}")
         if not any(set(ev) <= set(f["evidence_ids"]) for ev in t["evidence_sets"]):

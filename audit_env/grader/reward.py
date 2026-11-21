@@ -21,8 +21,8 @@ def metrics(tp: int, fp: int, fn: int) -> dict[str, float]:
 
 
 def terminal_reward(f1: float, inspection_steps: int) -> float:
-    value = 2.0 * f1 - 1.0 - STEP_COST * inspection_steps
-    return round(max(-1.0, min(1.0, value)), 6)
+    """clip(2*F1 - 1 - 0.002*inspection_steps, -1, 1); not rounded (judge tolerance is 1e-9 absolute)."""
+    return max(-1.0, min(1.0, 2.0 * f1 - 1.0 - STEP_COST * inspection_steps))
 
 
 @dataclass
@@ -30,35 +30,44 @@ class GradeReport:
     episode_id: str
     valid: bool
     error: str | None
-    tp: int
-    fp: int
-    fn: int
-    precision: float
-    recall: float
-    f1: float
+    tp: int | None
+    fp: int | None
+    fn: int | None
+    precision: float | None
+    recall: float | None
+    f1: float | None
     inspection_steps: int
     reward: float
     n_findings: int
     finding_status: list[str]
-    matched: list[tuple[int, str]]
+    matched: list[tuple[str, int]]
     missed: list[str]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    def judge_view(self) -> dict[str, Any]:
+        """Shape required by judge_adapter.score_episode."""
+        return {"tp": self.tp, "fp": self.fp, "fn": self.fn, "precision": self.precision, "recall": self.recall,
+                "f1": self.f1, "return": self.reward}
 
-def grade(submission: Any, truth: dict[str, Any], inspection_steps: int) -> GradeReport:
-    """Grade a findings.json payload. `submission=None` means "no answer" (truncation): empty findings."""
+
+def grade(submission: Any, truth: dict[str, Any], inspection_steps: int,
+          known_ids: set[str] | None = None) -> GradeReport:
+    """Grade a findings.json payload. `submission=None` means "no answer" (truncation): empty findings.
+
+    `known_ids` is the set of accessible evidence ids of the episode; evidence outside it is unmatchable.
+    An invalid structure yields reward -1 and null metrics.
+    """
     episode_id = truth["episode_id"]
     if submission is None:
         submission = {"episode_id": episode_id, "findings": []}
     try:
         findings = parse_submission(submission, episode_id)
     except SubmissionError as exc:
-        n_issues = len(truth["issues"])
-        return GradeReport(episode_id, False, f"{exc.code}: {exc.message}", 0, 0, n_issues, 0.0, 0.0, 0.0,
+        return GradeReport(episode_id, False, f"{exc.code}: {exc.message}", None, None, None, None, None, None,
                            inspection_steps, -1.0, 0, [], [], [t["issue_id"] for t in truth["issues"]])
-    result = match(findings, truth)
+    result = match(findings, truth, known_ids)
     m = metrics(result.tp, result.fp, result.fn)
     return GradeReport(
         episode_id=episode_id, valid=True, error=None, tp=result.tp, fp=result.fp, fn=result.fn,
