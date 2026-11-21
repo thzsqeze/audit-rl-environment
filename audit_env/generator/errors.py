@@ -318,8 +318,8 @@ def scenario_partial_fx_payment_boundary(world: World) -> list[Issue]:
         world.bookings[key] = ReceiptBooking(pay.key, [(inv.key, pay.amount, world.ar_base(inv))])
 
         def change() -> None:
-            apps = [(inv.key, applied, world.conv(applied, inv.currency, world.invoice_rate(inv)))]
-            world.bookings[key] = ReceiptBooking(pay.key, apps, ACC_SUSPENSE, unapplied, rate_date=wrong)
+            apps = [(inv.key, applied, world.conv(applied, inv.currency, world.invoice_rate(inv)))]  # noqa: B023 - called immediately
+            world.bookings[key] = ReceiptBooking(pay.key, apps, ACC_SUSPENSE, unapplied, rate_date=wrong)  # noqa: B023
 
         mutation = _record(world, [key], change)
         mutation.update({"moved_receipt_from": old_ts.isoformat(), "correct_rate": correct_rate,
