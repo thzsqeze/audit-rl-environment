@@ -1,0 +1,5 @@
+{
+  "extends": "default",
+  "config_id": "clean",
+  "clean_probability": 1.0
+}

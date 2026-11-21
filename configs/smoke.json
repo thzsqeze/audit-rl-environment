@@ -1,0 +1,24 @@
+{
+  "extends": "default",
+  "config_id": "smoke",
+  "n_period_invoices": [
+    15,
+    20
+  ],
+  "n_customers": [
+    3,
+    5
+  ],
+  "clean_probability": 0.0,
+  "error_counts": {
+    "duplicate_invoice": [
+      1,
+      1
+    ],
+    "payment_allocation": [
+      1,
+      1
+    ]
+  },
+  "scenario_counts": {}
+}

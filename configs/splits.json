@@ -1,0 +1,123 @@
+{
+  "_comment": "Open splits. Hidden evaluation uses different seeds and new parameter combinations.",
+  "train": [
+    {
+      "seed": 0,
+      "config": "train"
+    },
+    {
+      "seed": 1,
+      "config": "train"
+    },
+    {
+      "seed": 2,
+      "config": "train"
+    },
+    {
+      "seed": 3,
+      "config": "train"
+    },
+    {
+      "seed": 4,
+      "config": "train"
+    },
+    {
+      "seed": 5,
+      "config": "train"
+    },
+    {
+      "seed": 6,
+      "config": "train"
+    },
+    {
+      "seed": 7,
+      "config": "train"
+    },
+    {
+      "seed": 8,
+      "config": {
+        "extends": "train",
+        "config_id": "train_clean",
+        "clean_probability": 1.0
+      }
+    },
+    {
+      "seed": 9,
+      "config": {
+        "extends": "train",
+        "config_id": "train_interacting",
+        "clean_probability": 0.0,
+        "scenario_counts": {
+          "partial_fx_payment_boundary": [
+            1,
+            1
+          ],
+          "duplicate_with_misapplied_payment": [
+            1,
+            1
+          ]
+        }
+      }
+    }
+  ],
+  "dev": [
+    {
+      "seed": 1000,
+      "config": "dev"
+    },
+    {
+      "seed": 1001,
+      "config": "dev"
+    },
+    {
+      "seed": 1002,
+      "config": "dev"
+    },
+    {
+      "seed": 1003,
+      "config": "dev"
+    },
+    {
+      "seed": 1004,
+      "config": "dev"
+    },
+    {
+      "seed": 1005,
+      "config": "dev"
+    },
+    {
+      "seed": 1006,
+      "config": "dev"
+    },
+    {
+      "seed": 1007,
+      "config": "dev"
+    },
+    {
+      "seed": 1008,
+      "config": {
+        "extends": "dev",
+        "config_id": "dev_clean",
+        "clean_probability": 1.0
+      }
+    },
+    {
+      "seed": 1009,
+      "config": {
+        "extends": "dev",
+        "config_id": "dev_interacting",
+        "clean_probability": 0.0,
+        "scenario_counts": {
+          "partial_fx_payment_boundary": [
+            1,
+            1
+          ],
+          "duplicate_with_misapplied_payment": [
+            1,
+            1
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "config_id": "train",
+  "config_version": "1",
+  "base_currencies": [
+    "USD",
+    "EUR",
+    "KZT",
+    "GBP"
+  ],
+  "foreign_currencies": [
+    "USD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "KWD",
+    "KZT"
+  ],
+  "n_foreign_currencies": [
+    1,
+    2
+  ],
+  "foreign_share": 0.35,
+  "timezones": [
+    "+05:00",
+    "-05:00",
+    "+01:00",
+    "+00:00"
+  ],
+  "year": 2026,
+  "months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "n_customers": [
+    6,
+    14
+  ],
+  "n_period_invoices": [
+    30,
+    60
+  ],
+  "n_opening_invoices": [
+    2,
+    6
+  ],
+  "n_next_period_invoices": [
+    2,
+    4
+  ],
+  "error_counts": {
+    "duplicate_invoice": [
+      0,
+      2
+    ],
+    "payment_allocation": [
+      0,
+      2
+    ],
+    "fx_conversion": [
+      0,
+      2
+    ],
+    "period_cutoff": [
+      0,
+      2
+    ]
+  },
+  "scenario_counts": {
+    "partial_fx_payment_boundary": [
+      0,
+      1
+    ],
+    "duplicate_with_misapplied_payment": [
+      0,
+      1
+    ]
+  },
+  "clean_probability": 0.2,
+  "max_issues": 12,
+  "fx_variants": [
+    "utc_date",
+    "stale_rate"
+  ],
+  "allocation_variants": [
+    "missing",
+    "partial"
+  ],
+  "cutoff_variants": [
+    "backdated",
+    "utc_boundary"
+  ],
+  "distractor_counts": {
+    "recurring_invoice": [
+      1,
+      2
+    ],
+    "split_payment": [
+      1,
+      3
+    ],
+    "multi_invoice_payment": [
+      0,
+      2
+    ],
+    "double_payment_refund": [
+      0,
+      1
+    ],
+    "unidentified_payment": [
+      0,
+      1
+    ],
+    "boundary_timestamp": [
+      1,
+      2
+    ]
+  },
+  "id_salt": "",
+  "shuffle_rows": false
+}
