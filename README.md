@@ -5,122 +5,157 @@
 вносит в книги ошибки с записанным причинным изменением и оценивает выводы агента с доказательствами.
 
 * runtime — только стандартная библиотека Python ≥ 3.11: без сети, GPU и платных API;
-* контракт в стиле Gymnasium: `reset(seed, config) -> (obs, info)`, `step(action) -> (obs, reward, terminated, truncated, info)`;
+* контракт в стиле Gymnasium и протокол жюри (`judge_adapter.py`, [определения проверок](genesis-fintech-checks.md));
 * 4 типа ошибок, 2 сценария взаимодействующих ошибок, чистые компании и 6 видов отвлекающих случаев;
 * общий matcher и награда `clip(2*F1 - 1 - 0.002*inspection_steps, -1, 1)` с тестами на атакующие ответы;
 * все данные синтетические: никаких реальных компаний, людей, счетов и платежей.
 
-## Быстрый старт
+## Единая команда проверки
 
 ```bash
-# единая команда проверки в контейнере (офлайн, 2 CPU, 4 ГБ)
 docker build -t audit-rl-env .
 docker run --rm --network none --cpus 2 --memory 4g audit-rl-env      # == python -m audit_env check
-
-# локально
-make install
-make check        # тесты + валидация данных + 4 базовые политики + воспроизводимость
-make demo         # скриптовая политика на эпизоде со взаимодействующими ошибками
 ```
 
-`check` пишет `reports/check_report.json` и возвращает ненулевой код при любом провале.
+Рабочая директория в контейнере — `/app` (корень репозитория). Локально: `make install && make check`.
 
-## Использование из Python
+`check` делает: тесты (`pytest`, 120+ тестов, в т. ч. копии опубликованных блоков C01–C20, matcher 1–20,
+M01–M12) → самопроверку эпизодов всех пресетов → генерацию матрицы D01–D20 в каталоги и прогон 4 базовых
+политик в закрытом режиме через `episode_dir` с поиском утечек → 20 парных проверок P01–P20
+(перестановка / смена ID / оба) на файлах. Отчёт — `reports/check_report.json`, ненулевой код при провале.
+
+## Подключение жюри (`judge_adapter.py`)
 
 ```python
-from audit_env.env import AuditEnv
+import judge_adapter as ja
 
-env = AuditEnv(mode="train")            # "eval": награда и диагностика остаются у оценщика
-obs, info = env.reset(seed=7, config="dev")
-episode_id = info["episode_id"]
-obs, reward, terminated, truncated, _ = env.step(
-    {"tool": "list_records", "args": {"table": "ledger", "limit": 50}})
-obs, reward, terminated, truncated, _ = env.step(
-    {"tool": "submit", "args": {"episode_id": episode_id, "findings": []}})
+ja.generate_episode(seed, config, output_dir)   # config: пресет, dict конфигурации или {"team_config": ...}
+env = ja.make_env()
+obs, info = env.reset(seed, {"mode": "closed", "episode_dir": output_dir})   # или "train"
+episode_id = obs["manifest"]["episode_id"]
+obs, reward, terminated, truncated, info = env.step({"name": "list_records", "args": {"table": "ledger", "cursor": None}})
+obs, reward, terminated, truncated, info = env.step(
+    {"name": "submit", "args": {"findings": {"episode_id": episode_id, "findings": [...]}}})
+ja.score_episode(output_dir, findings_json, inspection_steps)
+# -> {"tp", "fp", "fn", "precision", "recall", "f1", "return"}; невалидный submit: return=-1, остальное null
 ```
 
-Изоляция процессов (агент не делит память с оценщиком):
-
-```bash
-python -m audit_env serve --mode eval --grader-log reports/grader.jsonl
-# stdin:  {"cmd": "reset", "seed": 3, "config": "clean"}
-#         {"cmd": "step", "action": {"tool": "get_document", "args": {"doc_id": "DOC-..."}}}
-```
+* `reset` с `episode_dir` загружает именно этот эпизод (ID и порядок не меняются), повторный `reset` начинает заново;
+  с `team_config` — генерирует. Без `mode` можно передать конфиг напрямую: `env.reset(7, "dev")`.
+* Наблюдения: после `reset` — `{task, manifest, policy, tools, remaining_steps: 100}`;
+  после `step` — `{result, error, remaining_steps}`, где `error` = `null` или `{code, message}` (без путей, seed, эталона).
+* `closed`: награда политике всегда `0.0`, `info = {}`; отчёт оценщика — только `env.grader_report()` после конца
+  эпизода и `score_episode`. `train`: терминальная награда и `info["grade"]` доступны политике.
+* Невалидный submit записывается в журнал оценщика (`AUDIT_GRADER_LOG`, по умолчанию stderr).
+* Изоляция процессов: `python -m audit_env serve --mode closed --grader-log grader.jsonl` — JSON-lines по stdin/stdout,
+  оценка пишется только в журнал; путь в качестве config запрещён.
 
 ## Действия
 
-| tool | args | примечание |
+| name | args | result |
 |---|---|---|
-| `list_records` | `table`, `cursor?`, `limit?` | `ledger`/`invoices`/`payments`/`fx`, ≤ 50 строк, стабильные курсоры `"<table>:<offset>"` |
-| `get_record` | `table`, `id` | `row_id` / `invoice_id` / `payment_id` / `FX:<date>:<src>:<dst>` |
-| `get_document` | `doc_id` | документ счёта или платежа; также `manifest`, `policy` |
-| `calculator` | `expression` | только числа, `+ - * / ( )`, десятичная арифметика |
-| `submit` | `episode_id`, `findings` | `findings.json`; завершает эпизод (`terminated=true`) |
+| `list_records` | `table`, `cursor?` (null/строка), `limit?` (1..50) | `{"records": [...], "next_cursor": null \| "<table>:<offset>"}` |
+| `get_record` | `table`, `id` | объект записи; `id`: `row_id` / `invoice_id` / `payment_id` / `FX:<date>:<src>:<dst>` |
+| `get_document` | `doc_id` | документ счёта/платежа; также `"manifest"`, `"policy"` |
+| `calculator` | `expression` | десятичная строка, только числа и `+ - * / ( )` (`"0.1+0.2"` → `"0.3"`) |
+| `submit` | `findings` (объект `findings.json`) | `{"accepted": true}` или ошибка структуры; `terminated=true` |
 
-Любой шаг (включая ошибочный) расходует бюджет; 100 шагов максимум, 60 с на эпизод → `truncated=true`
-и оценка пустого ответа. Ошибки ограничены кодом и коротким сообщением без путей и отладочной информации.
+Таблицы: `ledger`, `invoices`, `payments`, `fx`. Любой шаг (в т. ч. ошибочный) расходует бюджет; submit входит в лимит
+100 действий, но не в `inspection_steps`; 100 исследовательских действий без submit → `truncated=true` и пустой ответ;
+60 с на эпизод.
 
 ## Данные эпизода
 
 ```
-episodes/<split>/<episode_id>/
-  manifest.json  policy.json  ledger.csv  invoices.jsonl  payments.jsonl  fx.csv   # открытые
-  _grader/truth.json  _grader/provenance.json                                    # закрытые
+<episode_dir>/manifest.json policy.json ledger.csv invoices.jsonl payments.jsonl fx.csv   # открытые
+<episode_dir>/truth.json provenance.json                                                 # закрытые
 ```
 
 * время — ISO-8601 со смещением (счета — в часовом поясе компании, платежи и проводки — в UTC);
-* деньги — целые минимальные единицы + код валюты (`JPY` — 0 знаков, `KWD` — 3);
-* курсы — десятичные строки, `1 source = rate target`, только рабочие дни;
-* отсутствующие ссылки — явный `null`.
+  деловая дата и границы периода — по `manifest.timezone`;
+* деньги — целые минимальные единицы + код валюты (`JPY` — 0 знаков, `KWD` — 3, остальные — 2);
+* курсы — десятичные строки, `1 source = rate target`, только рабочие дни; правило выбора даты — в `policy.fx`;
+* отсутствующие ссылки — явный `null` (в CSV — строка `null`);
+* дополнительные поля: `ledger.journal_id/txn_currency/txn_amount_minor/fx_rate`, `payments.entity_id/direction/refund_of`;
+* `provenance.json`: журнал генерации, для каждой ошибки — проводки до/после изменения в публичных ID,
+  а также `clean_books` — книга тех же документов до внесения ошибок.
 
-Открытые сплиты: `configs/splits.json` (10 train + 10 dev, включая чистый и «взаимодействующий» эпизод в каждом).
-Закрытая проверка использует другие seed и новые сочетания параметров (`id_salt`, `shuffle_rows`, другие пресеты).
+## Типы ошибок и канонические ответы
 
-## Команды CLI
+| type | affected_ids | claimed_amount_minor / currency |
+|---|---|---|
+| `duplicate_invoice` | оба `invoice_id` | сумма счёта / валюта счёта |
+| `payment_allocation` | `[payment_id, invoice_id]` | недоприменённая сумма / валюта платежа |
+| `fx_conversion` | `[invoice_id]` или `[payment_id]` | \|проведено − по policy\| / базовая валюта |
+| `period_cutoff` | `[invoice_id]` | сумма счёта / валюта счёта |
+
+Сравнение точное: ID, тип и валюта — строки как есть, сумма — целое, допуск τ = 0 для всех типов
+(ожидаемые суммы вычисляются по policy без неоднозначного округления). Подробно — [DESIGN.md](DESIGN.md).
+
+## Конфигурации (`configs/`)
+
+Пресет — имя файла; dict может наследовать пресет через `"extends"`. Каждый тип включается независимо.
+
+| нужен эпизод | config |
+|---|---|
+| чистый, обычная сверка / разбитый платёж / возврат / повторяющиеся суммы / граница периода и TZ | `clean_basic` / `clean_split_payment` / `clean_refund` / `clean_recurring` / `clean_boundary` |
+| одна ошибка заданного типа | `type_duplicate_invoice`, `type_payment_allocation[_missing\|_partial]`, `type_fx_conversion`, `type_period_cutoff` |
+| сценарий взаимодействия 1: частичный валютный платёж на границе периода (+ курс UTC-даты) | `scenario_partial_fx_payment_boundary` |
+| сценарий взаимодействия 2: дубль счёта + платёж зачтён на дубль | `scenario_duplicate_with_misapplied_payment` |
+| смешанный | `default`, `train`, `dev`, `interacting`, `clean` |
+| безвредные преобразования (внутри генератора) | `{"extends": "...", "id_salt": "x", "shuffle_rows": true}` |
+
+Основные поля: `error_counts`, `scenario_counts`, `distractor_counts` (диапазоны `[min, max]`), `clean_probability`,
+`fx_variants`, `allocation_variants`, `cutoff_variants`, `base_currencies`, `timezones`, `months`, размеры.
+
+## Прочие команды
 
 ```bash
 python -m audit_env generate --split train --out episodes/train      # или --seeds 0-99 --config dev
 python -m audit_env validate --seeds 0-199 --config interacting       # самопроверка генератора
-python -m audit_env run --split dev --mode eval --out runs/dev        # траектории + grades + summary
-python -m audit_env check                                             # единая проверка
-python -m audit_env demo --seed 9 --config interacting
+python -m audit_env run --split dev --mode closed --out runs/dev      # trajectories.jsonl + grades.jsonl + summary.json
+python -m audit_env demo --seed 9 --config interacting                # скриптовая политика на эпизоде
 ```
+
+Открытые сплиты (`configs/splits.json`): 10 train + 10 dev эпизодов в `episodes/`, траектории базовых политик —
+`artifacts/{train,dev}/trajectories.jsonl` (поля `episode_id, step, action, observation, reward, terminated, truncated, info`).
 
 ## Базовые политики
 
-| политика | что делает |
+| policy | что делает |
 |---|---|
 | `random` | случайный исследователь с фиксированным seed, затем 0–2 случайные догадки |
 | `reconciler` | простая сверка с наивными эвристиками (UTC-даты, дубли по сумме) |
 | `flag_all` | атака «пометить всё» (30 находок по всем типам) |
-| `oracle` | только для оценщика: отправляет эталон с доказательствами |
-| `rules_auditor` | эталонный решатель по открытым правилам — доказывает разрешимость в бюджете шагов |
+| `oracle` | только для оценщика: отправляет эталон с доказательствами обычным submit |
+| `rules_auditor` | эталонный решатель по открытым правилам — показывает разрешимость в бюджете шагов |
 
-Последний `check` (20 скрытых-подобных эпизодов: 10 смешанных, 5 чистых, 5 взаимодействующих):
+Последний `check`, закрытый режим, матрица D01–D20 (5 чистых, 10 с одной ошибкой, 5 взаимодействующих):
 
-| policy | P | R | F1 | return | steps |
-|---|---|---|---|---|---|
-| random | 0.000 | 0.000 | 0.200 | -0.610 | 23.0 |
-| reconciler | 0.160 | 0.347 | 0.216 | -0.583 | 13.1 |
-| flag_all | 0.000 | 0.000 | 0.000 | -1.000 | 4.6 |
-| oracle | 0.650 | 0.650 | 1.000 | 1.000 | 1.0 |
-| rules_auditor | 0.650 | 0.650 | 1.000 | 0.976 | 13.1 |
+| policy | P | R | F1 | return | steps | time, s |
+|---|---|---|---|---|---|---|
+| random | 0.000 | 0.000 | 0.050 | -0.901 | 23.6 | 0.006 |
+| reconciler | 0.056 | 0.400 | 0.147 | -0.719 | 12.8 | 0.006 |
+| flag_all | 0.000 | 0.000 | 0.000 | -1.000 | 4.3 | 0.005 |
+| oracle | 0.750 | 0.750 | 1.000 | 1.000 | 1.0 | 0.003 |
+| rules_auditor | 0.750 | 0.750 | 1.000 | 0.977 | 12.8 | 0.007 |
 
-P и R усреднены по эпизодам; на чистых эпизодах они по определению равны 0, а F1 = 1 при пустом ответе.
+Средние по эпизодам; на чистых эпизодах P = R = 0 по определению, F1 = 1 при пустом ответе. Это диагностика,
+а не заявление о качестве модели.
 
 ## Структура
 
 ```
+judge_adapter.py  точки входа жюри
 audit_env/
   generator/   world.py (модель и проводки) history.py (история, отвлекающие случаи)
-               errors.py (инъекции и сценарии) episode.py (рендер, ID, эталон, provenance)
-  grader/      matcher.py (схема, нормализация, сопоставление) reward.py (метрики, награда)
-  env.py       контракт reset/step и инструменты      server.py  stdio-изоляция
-  rules.py     правила по открытым данным             validate.py самопроверки эпизодов
-  policies/    базовые политики                       runner.py  траектории и сводки
-configs/       версионированные пресеты и сплиты
-tests/         тесты среды, генератора, сопоставления и награды
+               errors.py (инъекции и сценарии) episode.py (рендер, ID, эталон, provenance, load/write)
+  grader/      matcher.py (схема, сопоставление) reward.py (метрики, награда)
+  env.py       контракт reset/step и инструменты      server.py    stdio-изоляция
+  rules.py     правила по открытым данным             validate.py  самопроверки эпизодов
+  transform.py перестановка/смена ID на файлах        policies/    базовые политики, runner.py
+configs/  пресеты и сплиты      tests/  тесты      episodes/  открытые эпизоды      artifacts/  траектории
 ```
 
-Подробности устройства, правила сопоставления и ограничения — в [DESIGN.md](DESIGN.md).
-Лицензия — MIT.
+Версии: `audit_env/version.py` (`ENV_VERSION`, `SCHEMA_VERSION`), `config_version` в пресетах, зависимости
+закреплены в `requirements-dev.txt`. Лицензия — MIT.
