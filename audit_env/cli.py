@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from audit_env.config import CONFIG_DIR, load_config
+from audit_env.config import CONFIG_DIR
 from audit_env.env import AuditEnv
 from audit_env.generator import generate_episode
 from audit_env.policies import BASELINES
@@ -25,8 +25,9 @@ from audit_env.version import ENV_VERSION, SCHEMA_VERSION
 
 REPO = Path(__file__).resolve().parent.parent
 # Observation text that must never appear (grader-only field names and paths).
-LEAK_MARKERS = ("issue_id", "ISS-", "evidence_sets", "expected_amount", "provenance", "_grader", "truth",
-                "causal_change", "injected", "\"variant\"", "\"scenario\"", "/workspaces", "/home/", "/app/")
+LEAK_MARKERS = ("issue_id", "ISS-", "evidence_sets", "expected_amount", "provenance", "truth", "clean_books",
+                "causal_change", "injected", "\"variant\"", "\"scenario\"", "\"seed\"", "/workspaces", "/home/",
+                "/app/", "/tmp/")
 
 
 def load_split(name: str) -> list[dict[str, Any]]:
@@ -105,8 +106,8 @@ def cmd_demo(args: argparse.Namespace) -> int:
         print(f"\n=== policy={name} episode={report['episode_id']} ===")
         for line in traj[1:]:
             a = line["action"]
-            brief = {k: (v if k != "findings" else f"<{len(v)} findings>") for k, v in a["args"].items()}
-            print(f"step {line['step']:>3}: {a['tool']} {brief} -> reward={line['reward']} "
+            brief = {k: (v if k != "findings" else f"<{len(v['findings'])} findings>") for k, v in a["args"].items()}
+            print(f"step {line['step']:>3}: {a['name']} {brief} -> reward={line['reward']} "
                   f"terminated={line['terminated']} truncated={line['truncated']}")
         print(f"P={report['precision']:.2f} R={report['recall']:.2f} F1={report['f1']:.2f} "
               f"return={report['reward']} steps={report['steps']} statuses={report['finding_status']}")
@@ -117,7 +118,8 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def _check_episodes(results: dict) -> None:
     items = load_split("train") + load_split("dev")
-    items += [{"seed": s, "config": c} for c in ("default", "clean", "interacting") for s in range(5000, 5010)]
+    presets = sorted({c for _, c, _ in JURY_MATRIX} | {"default", "interacting"})
+    items += [{"seed": s, "config": c} for c in presets for s in range(5000, 5005)]
     failures = []
     for item in items:
         errors = validate_episode(generate_episode(item["seed"], item["config"]))
@@ -126,33 +128,59 @@ def _check_episodes(results: dict) -> None:
     results["episode_validation"] = {"checked": len(items), "failures": failures, "passed": not failures}
 
 
-def _eval_items() -> list[dict]:
-    # mirrors the jury protocol: 20 episodes, 5 clean and 5 with interacting errors
-    return ([{"seed": s, "config": "default", "kind": "mixed"} for s in range(7000, 7010)]
-            + [{"seed": s, "config": "clean", "kind": "clean"} for s in range(7100, 7105)]
-            + [{"seed": s, "config": "interacting", "kind": "interacting"} for s in range(7200, 7205)])
+# Mirrors the published jury matrix D01-D20 (5 clean, 10 single-type, 5 interacting).
+JURY_MATRIX = (
+    [("D01", "clean_basic", "clean"), ("D02", "clean_split_payment", "clean"), ("D03", "clean_refund", "clean"),
+     ("D04", "clean_recurring", "clean"), ("D05", "clean_boundary", "clean")]
+    + [(f"D0{i}", "type_duplicate_invoice", "single") for i in (6, 7, 8)]
+    + [("D09", "type_payment_allocation_missing", "single"), ("D10", "type_payment_allocation_partial", "single"),
+       ("D11", "type_payment_allocation_missing", "single")]
+    + [(f"D{i}", "type_fx_conversion", "single") for i in (12, 13)]
+    + [(f"D{i}", "type_period_cutoff", "single") for i in (14, 15)]
+    + [(f"D{i}", "scenario_partial_fx_payment_boundary", "interacting") for i in (16, 17, 18)]
+    + [(f"D{i}", "scenario_duplicate_with_misapplied_payment", "interacting") for i in (19, 20)]
+)
+# P01-P05 permute, P06-P10 rename, P11-P20 both (published pair matrix)
+PAIR_KIND = {i: ((True, False) if i <= 5 else (False, True) if i <= 10 else (True, True)) for i in range(1, 21)}
 
 
-def _check_baselines(results: dict, out: Path) -> None:
-    items = _eval_items()
+def _eval_items(base_seed: int = 7000) -> list[dict]:
+    return [{"id": d, "seed": base_seed + i, "config": cfg, "kind": kind}
+            for i, (d, cfg, kind) in enumerate(JURY_MATRIX, start=1)]
+
+
+def _materialize(items: list[dict], root: Path) -> list[dict]:
+    """Generate each episode into its own directory (judge protocol: episodes are loaded from files)."""
+    out = []
+    for item in items:
+        directory = root / item["id"]
+        generate_episode(item["seed"], item["config"]).write(directory)
+        out.append({**item, "dir": str(directory), "env_config": {"mode": "closed", "episode_dir": str(directory)}})
+    return out
+
+
+def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
     per_policy, leaks = {}, []
     out.mkdir(parents=True, exist_ok=True)
     with open(out / "trajectories.jsonl", "w", encoding="utf-8") as fh:
         for name in (*BASELINES, "rules_auditor"):
             reports = []
             for item in items:
-                traj, report = run_episode(name, item["seed"], item["config"], "eval")
+                traj, report = run_episode(name, item["seed"], item["env_config"])
                 report["kind"] = item["kind"]
                 reports.append(report)
                 for line in traj:
-                    text = json.dumps(line["observation"])
+                    text = json.dumps(line["observation"]) + json.dumps(line.get("info", {}))
                     hits = [m for m in LEAK_MARKERS if m in text]
                     if hits:
-                        leaks.append({"policy": name, "seed": item["seed"], "step": line["step"], "markers": hits})
+                        leaks.append({"policy": name, "episode": item["id"], "step": line["step"], "markers": hits})
+                    if line["reward"] != 0.0:
+                        leaks.append({"policy": name, "episode": item["id"], "step": line["step"],
+                                      "markers": ["non-zero reward in closed mode"]})
                     fh.write(json.dumps({"policy": name, **line}, sort_keys=True) + "\n")
             per_policy[name] = {"all": summarize(reports),
                                 **{k: summarize([r for r in reports if r["kind"] == k])
-                                   for k in ("mixed", "clean", "interacting")}}
+                                   for k in ("clean", "single", "interacting")}}
     oracle = per_policy["oracle"]["all"]
     checks = {
         "oracle_max_reward": oracle["mean_reward"] == 1.0 and oracle["fp"] == 0 and oracle["fn"] == 0,
@@ -160,49 +188,67 @@ def _check_baselines(results: dict, out: Path) -> None:
         "random_below_oracle": per_policy["random"]["all"]["mean_reward"] < 0.5,
         "no_invalid_baseline_submissions": all(p["all"]["invalid_submissions"] == 0 for p in per_policy.values()),
         "within_time_limit": all(p["all"]["max_wall_time_s"] < 60 for p in per_policy.values()),
-        "no_observation_leaks": not leaks,
+        "no_leaks_in_closed_mode": not leaks,
     }
     results["baselines"] = {"summary": per_policy, "checks": checks, "leaks": leaks[:20],
                             "passed": all(checks.values())}
 
 
-def _replay(seed: int, config: Any, actions: list[dict]) -> list[Any]:
+def _replay(config: Any, actions: list[dict]) -> str:
     env = AuditEnv(mode="train")
-    obs, info = env.reset(seed, config)
-    out: list[Any] = [obs, info]
+    out: list[Any] = list(env.reset(0, config))
     for a in actions:
         out.append(env.step(a))
-    return out
+    return _digest(out)
 
 
-def _check_reproducibility(results: dict) -> None:
-    failures = []
-    for item in _eval_items():
-        seed, config = item["seed"], item["config"]
-        a, b = generate_episode(seed, config), generate_episode(seed, config)
-        if _digest([a.public(), a.truth]) != _digest([b.public(), b.truth]):
-            failures.append({"seed": seed, "check": "regeneration differs"})
-        traj, _ = run_episode("reconciler", seed, config, "train")
+def _check_pairs(results: dict, items: list[dict], root: Path) -> None:
+    from audit_env.generator import Episode
+    from audit_env.transform import transform
+    from audit_env.validate import truth_errors
+
+    pairs = []
+    for n, item in enumerate(items, start=1):
+        permute, rename = PAIR_KIND[n]
+        fails: list[str] = []
+        # 1. same seed/config/version/actions reproduce records, transitions and rewards
+        if _digest(generate_episode(item["seed"], item["config"]).public()) != \
+                _digest(Episode.load(item["dir"]).public()):
+            fails.append("regeneration differs from stored episode")
+        traj, _ = run_episode("rules_auditor", item["seed"], {"mode": "train", "episode_dir": item["dir"]})
         actions = [line["action"] for line in traj[1:]]
-        if _digest(_replay(seed, config, actions)) != _digest(_replay(seed, config, actions)):
-            failures.append({"seed": seed, "check": "replay differs"})
-        # benign transformation: new ids + shuffled ledger order, same hidden history
-        cfg = load_config(config).to_dict()
-        cfg.update(id_salt="paired-check", shuffle_rows=True)
-        c = generate_episode(seed, cfg)
-        if not validate_episode(c) == []:
-            failures.append({"seed": seed, "check": "transformed episode invalid"})
-        shape = lambda ep: sorted((t["type"], t["expected_amount_minor"], t["currency"]) for t in ep.truth["issues"])  # noqa: E731
-        if shape(a) != shape(c) or a.episode_id == c.episode_id:
-            failures.append({"seed": seed, "check": "transformation changed the answer shape"})
-        if set(r["row_id"] for r in a.ledger) & set(r["row_id"] for r in c.ledger):
-            failures.append({"seed": seed, "check": "transformation kept row ids"})
+        cfg = {"mode": "train", "episode_dir": item["dir"]}
+        if _replay(cfg, actions) != _replay(cfg, actions):
+            fails.append("replay differs")
+        # 2-4. jury-style transformation on files
+        original = Episode.load(item["dir"])
+        moved, mapping = transform(original, seed=n, permute=permute, rename=rename)
+        tdir = root / f"P{n:02d}"
+        moved.write(tdir)
+        if truth_errors(moved.public(), moved.truth):
+            fails.append("transformed evidence not derivable/accessible")
+        tcfg = {"mode": "closed", "episode_dir": str(tdir)}
+        keys = ("tp", "fp", "fn", "precision", "recall", "f1", "reward", "inspection_steps")
         for name in ("oracle", "rules_auditor"):
-            r1 = run_episode(name, seed, config, "eval")[1]["reward"]
-            r2 = run_episode(name, seed, cfg, "eval")[1]["reward"]
-            if name == "oracle" and r1 != r2:
-                failures.append({"seed": seed, "check": f"{name} reward changed {r1} -> {r2}"})
-    results["reproducibility"] = {"pairs": len(_eval_items()), "failures": failures, "passed": not failures}
+            r1 = run_episode(name, item["seed"], item["env_config"])
+            r2 = run_episode(name, item["seed"], tcfg)
+            if {k: r1[1][k] for k in keys} != {k: r2[1][k] for k in keys}:
+                fails.append(f"{name} grade changed")
+            if name == "oracle":
+                inverse = {v: k for k, v in mapping.items()}
+                back = [sorted((f["type"], tuple(sorted(inverse.get(x, x) for x in f["affected_ids"])),
+                                f["claimed_amount_minor"], f["currency"],
+                                tuple(sorted(inverse.get(x, x) for x in f["evidence_ids"])))
+                               for f in r2[0][-1]["action"]["args"]["findings"]["findings"])]
+                orig = [sorted((f["type"], tuple(sorted(f["affected_ids"])), f["claimed_amount_minor"], f["currency"],
+                                tuple(sorted(f["evidence_ids"])))
+                               for f in r1[0][-1]["action"]["args"]["findings"]["findings"])]
+                if back != orig:
+                    fails.append("oracle findings differ after inverse id mapping")
+        pairs.append({"pair": f"P{n:02d}", "episode": item["id"], "permute": permute, "rename": rename,
+                      "passed": not fails, "failures": fails})
+    results["paired_checks"] = {"pairs": pairs, "passed_count": sum(p["passed"] for p in pairs),
+                                "passed": all(p["passed"] for p in pairs)}
 
 
 def _check_tests(results: dict) -> None:
@@ -218,6 +264,8 @@ def _check_tests(results: dict) -> None:
 
 
 def cmd_check(args: argparse.Namespace) -> int:
+    import tempfile
+
     started = time.time()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -225,24 +273,29 @@ def cmd_check(args: argparse.Namespace) -> int:
         "env_version": ENV_VERSION, "schema_version": SCHEMA_VERSION,
         "python": platform.python_version(), "platform": platform.platform(),
     }
-    steps = [("tests", _check_tests), ("episode_validation", _check_episodes),
-             ("baselines", lambda r: _check_baselines(r, out)), ("reproducibility", _check_reproducibility)]
-    if args.skip_tests:
-        steps = steps[1:]
-    for name, fn in steps:
-        t0 = time.time()
-        fn(results)
-        status = results[name]["passed"]
-        print(f"[{'PASS' if status else ('SKIP' if status is None else 'FAIL')}] {name} ({time.time() - t0:.1f}s)")
+    with tempfile.TemporaryDirectory(prefix="audit-check-") as tmp:
+        items = _materialize(_eval_items(), Path(tmp) / "episodes")
+        results["jury_matrix"] = [{k: i[k] for k in ("id", "seed", "config", "kind")} for i in items]
+        steps = [("tests", _check_tests), ("episode_validation", _check_episodes),
+                 ("baselines", lambda r: _check_baselines(r, out, items)),
+                 ("paired_checks", lambda r: _check_pairs(r, items, Path(tmp) / "pairs"))]
+        if args.skip_tests:
+            steps = steps[1:]
+        for name, fn in steps:
+            t0 = time.time()
+            fn(results)
+            status = results[name]["passed"]
+            print(f"[{'PASS' if status else ('SKIP' if status is None else 'FAIL')}] {name} ({time.time() - t0:.1f}s)")
     results["elapsed_s"] = round(time.time() - started, 2)
     (out / "check_report.json").write_text(json.dumps(results, indent=2, default=str) + "\n")
-    print("\nBaseline diagnostics (20 eval episodes: 10 mixed, 5 clean, 5 interacting):")
+    print("\nBaseline diagnostics, closed mode, jury-style matrix D01-D20 (5 clean, 10 single, 5 interacting):")
     print(f"{'policy':<14}{'P':>7}{'R':>7}{'F1':>7}{'return':>9}{'steps':>7}{'time_s':>8}")
     for name, s in results["baselines"]["summary"].items():
         a = s["all"]
         print(f"{name:<14}{a['mean_precision']:>7.3f}{a['mean_recall']:>7.3f}{a['mean_f1']:>7.3f}"
               f"{a['mean_reward']:>9.3f}{a['mean_steps']:>7.1f}{a['mean_wall_time_s']:>8.3f}")
-    print(f"\nreport: {out / 'check_report.json'}")
+    print(f"\npaired checks: {results['paired_checks']['passed_count']}/20 passed")
+    print(f"report: {out / 'check_report.json'}")
     ok = all(results[n]["passed"] is not False for n, _ in steps)
     print("CHECK PASSED" if ok else "CHECK FAILED")
     return 0 if ok else 1
@@ -261,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="audit-env", description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("generate", help="write episodes (public files + _grader/) to a directory")
+    p = sub.add_parser("generate", help="write episodes (public files + truth.json/provenance.json)")
     p.add_argument("--split", choices=["train", "dev"])
     p.add_argument("--seeds", type=_seeds, default=[0])
     p.add_argument("--config", default="default")
@@ -279,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--split", choices=["train", "dev"])
     p.add_argument("--seeds", type=_seeds, default=[0])
     p.add_argument("--config", default="default")
-    p.add_argument("--mode", choices=["train", "eval"], default="train")
+    p.add_argument("--mode", choices=["train", "closed"], default="train")
     p.add_argument("--out", default="runs/latest")
     p.set_defaults(fn=cmd_run)
 
@@ -289,7 +342,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_check)
 
     p = sub.add_parser("serve", help="JSON-lines stdio server (agent in a separate process)")
-    p.add_argument("--mode", choices=["train", "eval"], default="eval")
+    p.add_argument("--mode", choices=["train", "closed"], default="closed")
     p.add_argument("--grader-log", default=None)
     p.set_defaults(fn=cmd_serve)
 
