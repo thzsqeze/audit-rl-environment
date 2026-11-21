@@ -7,7 +7,6 @@ import datetime as dt
 from collections import defaultdict
 from decimal import Decimal
 
-from audit_env.money import USD_VALUE, exponent, format_rate, parse_offset
 from audit_env.generator.world import (
     ACC_CUSTOMER_CREDIT,
     ACC_SUSPENSE,
@@ -18,6 +17,7 @@ from audit_env.generator.world import (
     RefundBooking,
     World,
 )
+from audit_env.money import USD_VALUE, exponent, format_rate, parse_offset
 
 SERVICES = [
     "Consulting services", "Software licence", "Maintenance and support", "Cloud hosting",
@@ -122,7 +122,7 @@ def _new_payment(world: World, inv: Invoice | None, ts: dt.datetime, amount: int
     key = world.new_key("P")
     pay = Payment(
         key=key, doc=world.new_key("D"), entity=entity if entity is not None else (inv.entity if inv else None),
-        ts=ts.astimezone(dt.timezone.utc), currency=currency or (inv.currency if inv else world.base),
+        ts=ts.astimezone(dt.UTC), currency=currency or (inv.currency if inv else world.base),
         amount=amount, direction=direction, refs=refs, refund_of=refund_of,
     )
     world.payments[key] = pay

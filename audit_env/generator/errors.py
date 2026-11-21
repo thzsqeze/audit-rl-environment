@@ -99,7 +99,7 @@ def _wrong_rate_date(world: World, currency: str, ts: dt.datetime, variant: str)
     """A rate date that a careless bookkeeper could use, giving a different effective rate."""
     correct_rate, correct_day = world.rate_on(currency, world.local(ts))
     if variant == "utc_date":
-        candidates = [ts.astimezone(dt.timezone.utc).date()]
+        candidates = [ts.astimezone(dt.UTC).date()]
     else:  # stale_rate
         candidates = [correct_day - dt.timedelta(days=d) for d in world.rng.sample(range(3, 15), 6)]
     for day in candidates:
@@ -294,7 +294,7 @@ def scenario_partial_fx_payment_boundary(world: World) -> list[Issue]:
                                       rng.randint(0, 59))
         else:
             boundary = world.local_dt(world.period_end, rng.randint(9, 17), rng.randint(0, 59))
-        new_ts = boundary.astimezone(dt.timezone.utc)
+        new_ts = boundary.astimezone(dt.UTC)
         if new_ts <= inv.issued_at:
             continue
         old_ts = pay.ts

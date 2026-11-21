@@ -169,7 +169,7 @@ def _render(world: World, rename: _Renamer, shuffle_rng=None) -> tuple[dict, dic
             row_lookup[(journal.key, row.role, row.inv)] = rid
             row_lookup.setdefault((journal.key, row.role, None), rid)
             ledger.append({
-                "row_id": rid, "journal_id": jid, "timestamp": iso(journal.ts.astimezone(dt.timezone.utc)),
+                "row_id": rid, "journal_id": jid, "timestamp": iso(journal.ts.astimezone(dt.UTC)),
                 "account": row.account, "debit_minor": row.debit, "credit_minor": row.credit,
                 "currency": world.base, "entity_id": rename(row.entity), "invoice_id": rename(row.inv),
                 "payment_id": rename(row.pay), "txn_currency": row.txn_currency,

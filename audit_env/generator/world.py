@@ -115,7 +115,7 @@ class World:
         self.rng = rng
         self.base: str = ""
         self.foreign: list[str] = []
-        self.tz: dt.timezone = dt.timezone.utc
+        self.tz: dt.timezone = dt.UTC
         self.tz_name: str = "+00:00"
         self.period_start: dt.date = dt.date(2026, 1, 1)
         self.period_end: dt.date = dt.date(2026, 1, 31)
