@@ -227,15 +227,19 @@ def build_payments(world: World) -> None:
         world.reserved.add(pay.key)
 
     # split payments
-    for _ in range(counts.get("split_payment", 0)):
-        cands = [i for i in singles if i.total >= 100]
+    early = world.period_end - dt.timedelta(days=10)
+    placed, attempts = 0, 0
+    while placed < counts.get("split_payment", 0) and attempts < 30:
+        attempts += 1
+        cands = [i for i in singles if i.total >= 100 and world.local(i.issued_at) <= early]
         if not cands:
             break
         inv = rng.choice(cands)
-        t1 = _payment_time(world, inv.issued_at, 1, 8)
-        t2 = _payment_time(world, t1, 1, 8) if t1 else None
+        t1 = _payment_time(world, inv.issued_at, 1, 4)
+        t2 = _payment_time(world, t1, 1, 4) if t1 else None
         if t1 is None or t2 is None:
             continue
+        placed += 1
         first = inv.total * rng.randint(30, 70) // 100
         p1 = _new_payment(world, inv, t1, first, refs=[(inv.key, first)])
         p2 = _new_payment(world, inv, t2, inv.total - first, refs=[(inv.key, inv.total - first)])
@@ -246,16 +250,19 @@ def build_payments(world: World) -> None:
         world.reserved.add(inv.key)
 
     # double payment + refund (base currency only)
-    for _ in range(counts.get("double_payment_refund", 0)):
-        cands = [i for i in singles if i.currency == world.base]
+    placed, attempts = 0, 0
+    while placed < counts.get("double_payment_refund", 0) and attempts < 30:
+        attempts += 1
+        cands = [i for i in singles if i.currency == world.base and world.local(i.issued_at) <= early]
         if not cands:
             break
         inv = rng.choice(cands)
-        t1 = _payment_time(world, inv.issued_at, 1, 6)
-        t2 = _payment_time(world, t1, 1, 4) if t1 else None
-        t3 = _payment_time(world, t2, 1, 4) if t2 else None
+        t1 = _payment_time(world, inv.issued_at, 1, 3)
+        t2 = _payment_time(world, t1, 1, 3) if t1 else None
+        t3 = _payment_time(world, t2, 1, 3) if t2 else None
         if t3 is None:
             continue
+        placed += 1
         p1 = _new_payment(world, inv, t1, inv.total, refs=[(inv.key, inv.total)])
         p2 = _new_payment(world, inv, t2, inv.total, refs=[(inv.key, inv.total)])
         p3 = _new_payment(world, inv, t3, inv.total, refs=None, direction="out", refund_of=p2.key)

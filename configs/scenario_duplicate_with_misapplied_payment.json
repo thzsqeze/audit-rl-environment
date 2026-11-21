@@ -1,0 +1,29 @@
+{
+  "extends": "default",
+  "clean_probability": 0.0,
+  "scenario_counts": {
+    "duplicate_with_misapplied_payment": [
+      1,
+      1
+    ]
+  },
+  "config_id": "scenario_duplicate_with_misapplied_payment",
+  "error_counts": {
+    "duplicate_invoice": [
+      0,
+      0
+    ],
+    "payment_allocation": [
+      0,
+      0
+    ],
+    "fx_conversion": [
+      0,
+      0
+    ],
+    "period_cutoff": [
+      0,
+      0
+    ]
+  }
+}

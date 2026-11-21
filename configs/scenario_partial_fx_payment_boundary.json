@@ -1,0 +1,29 @@
+{
+  "extends": "default",
+  "clean_probability": 0.0,
+  "scenario_counts": {
+    "partial_fx_payment_boundary": [
+      1,
+      1
+    ]
+  },
+  "config_id": "scenario_partial_fx_payment_boundary",
+  "error_counts": {
+    "duplicate_invoice": [
+      0,
+      0
+    ],
+    "payment_allocation": [
+      0,
+      0
+    ],
+    "fx_conversion": [
+      0,
+      0
+    ],
+    "period_cutoff": [
+      0,
+      0
+    ]
+  }
+}
