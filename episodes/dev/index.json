@@ -1,0 +1,103 @@
+{
+  "env_version": "0.1.0",
+  "episodes": [
+    {
+      "episode_id": "ep-9b89350dac",
+      "seed": 1000,
+      "config": "dev",
+      "issues": 8,
+      "ledger_rows": 215,
+      "documents": 109
+    },
+    {
+      "episode_id": "ep-f9f86d4d4f",
+      "seed": 1001,
+      "config": "dev",
+      "issues": 5,
+      "ledger_rows": 228,
+      "documents": 110
+    },
+    {
+      "episode_id": "ep-078ec62715",
+      "seed": 1002,
+      "config": "dev",
+      "issues": 3,
+      "ledger_rows": 226,
+      "documents": 114
+    },
+    {
+      "episode_id": "ep-70fb28c097",
+      "seed": 1003,
+      "config": "dev",
+      "issues": 10,
+      "ledger_rows": 220,
+      "documents": 109
+    },
+    {
+      "episode_id": "ep-b2a2da1944",
+      "seed": 1004,
+      "config": "dev",
+      "issues": 0,
+      "ledger_rows": 268,
+      "documents": 136
+    },
+    {
+      "episode_id": "ep-68184e0a88",
+      "seed": 1005,
+      "config": "dev",
+      "issues": 8,
+      "ledger_rows": 224,
+      "documents": 116
+    },
+    {
+      "episode_id": "ep-5b4d87e2c6",
+      "seed": 1006,
+      "config": "dev",
+      "issues": 7,
+      "ledger_rows": 273,
+      "documents": 137
+    },
+    {
+      "episode_id": "ep-8628b8295b",
+      "seed": 1007,
+      "config": "dev",
+      "issues": 0,
+      "ledger_rows": 284,
+      "documents": 144
+    },
+    {
+      "episode_id": "ep-6303484def",
+      "seed": 1008,
+      "config": {
+        "extends": "dev",
+        "config_id": "dev_clean",
+        "clean_probability": 1.0
+      },
+      "issues": 0,
+      "ledger_rows": 286,
+      "documents": 147
+    },
+    {
+      "episode_id": "ep-273064b1c8",
+      "seed": 1009,
+      "config": {
+        "extends": "dev",
+        "config_id": "dev_interacting",
+        "clean_probability": 0.0,
+        "scenario_counts": {
+          "partial_fx_payment_boundary": [
+            1,
+            1
+          ],
+          "duplicate_with_misapplied_payment": [
+            1,
+            1
+          ]
+        }
+      },
+      "issues": 7,
+      "ledger_rows": 311,
+      "documents": 154
+    }
+  ]
+}

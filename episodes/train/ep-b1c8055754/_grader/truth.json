@@ -1,0 +1,32 @@
+{
+  "amount_tolerance_minor": 1,
+  "episode_id": "ep-b1c8055754",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-2LBGSC",
+        "INV-3WXHPS"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-KED9T6",
+          "DOC-Q7CD5A",
+          "GL-A3W5J3BS",
+          "GL-XF5KVJH3"
+        ],
+        [
+          "DOC-KED9T6",
+          "DOC-Q7CD5A",
+          "GL-99SYNBWT",
+          "GL-BUUUEGVQ"
+        ]
+      ],
+      "expected_amount_minor": 4844400,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    }
+  ]
+}

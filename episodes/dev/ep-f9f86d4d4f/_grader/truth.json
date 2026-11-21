@@ -1,0 +1,109 @@
+{
+  "amount_tolerance_minor": 1,
+  "episode_id": "ep-f9f86d4d4f",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-PXKFBZ"
+      ],
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "DOC-HM4GG2",
+          "FX:2026-10-01:KWD:KZT",
+          "GL-KCKKXWGX"
+        ],
+        [
+          "DOC-HM4GG2",
+          "FX:2026-10-01:KWD:KZT",
+          "GL-8TCJ52TG"
+        ]
+      ],
+      "expected_amount_minor": 415702,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-RJ3EU6"
+      ],
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "DOC-U9FT6Q",
+          "FX:2026-10-01:EUR:KZT",
+          "GL-TD874W84"
+        ],
+        [
+          "DOC-U9FT6Q",
+          "FX:2026-10-01:EUR:KZT",
+          "GL-HP32JUG2"
+        ]
+      ],
+      "expected_amount_minor": 8554,
+      "issue_id": "ISS-02",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "PMT-7TW5HP"
+      ],
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "DOC-USXHEY",
+          "FX:2026-10-30:KWD:KZT",
+          "GL-EUUBL5HZ"
+        ]
+      ],
+      "expected_amount_minor": 198240,
+      "issue_id": "ISS-03",
+      "scenario": "partial_fx_payment_boundary",
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-KKGRYY",
+        "PMT-7TW5HP"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-USXHEY",
+          "GL-535WYXGJ"
+        ]
+      ],
+      "expected_amount_minor": 168000,
+      "issue_id": "ISS-04",
+      "scenario": "partial_fx_payment_boundary",
+      "type": "payment_allocation",
+      "variant": "partial"
+    },
+    {
+      "affected_ids": [
+        "INV-Y5KDZV"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-T239CM",
+          "GL-NJNGAAAJ"
+        ],
+        [
+          "DOC-T239CM",
+          "GL-WJX9RDJR"
+        ]
+      ],
+      "expected_amount_minor": 537100,
+      "issue_id": "ISS-05",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "backdated"
+    }
+  ]
+}
