@@ -25,3 +25,7 @@ def oracle_findings(truth, evidence_index=0):
         "type": t["type"], "affected_ids": list(t["affected_ids"]), "claimed_amount_minor": t["expected_amount_minor"],
         "currency": t["currency"], "evidence_ids": list(t["evidence_sets"][evidence_index]), "explanation": "x",
     } for t in truth["issues"]]
+
+
+def submit_action(episode_id, findings):
+    return {"name": "submit", "args": {"findings": {"episode_id": episode_id, "findings": findings}}}
