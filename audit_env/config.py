@@ -43,7 +43,7 @@ class GeneratorConfig:
     year: int = 2026
     months: list[int] = field(default_factory=lambda: list(range(1, 13)))
     n_customers: list[int] = field(default_factory=lambda: _range(6, 14))
-    n_period_invoices: list[int] = field(default_factory=lambda: _range(30, 60))
+    n_period_invoices: list[int] = field(default_factory=lambda: _range(60, 90))
     n_opening_invoices: list[int] = field(default_factory=lambda: _range(2, 6))
     n_next_period_invoices: list[int] = field(default_factory=lambda: _range(2, 4))
     # issues: inclusive [min, max] count per type / scenario
