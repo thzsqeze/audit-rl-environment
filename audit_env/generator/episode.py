@@ -24,7 +24,8 @@ LEDGER_COLUMNS = [
     "entity_id", "invoice_id", "payment_id", "txn_currency", "txn_amount_minor", "fx_rate",
 ]
 FX_COLUMNS = ["date", "source_currency", "target_currency", "rate"]
-AMOUNT_TOLERANCE_MINOR = 1
+AMOUNT_TOLERANCE_MINOR = 0  # exact integer comparison (judge default tau=0); expected amounts are exact
+LEDGER_INT_COLUMNS = ("debit_minor", "credit_minor", "txn_amount_minor")
 TABLES = ("ledger", "invoices", "payments", "fx")
 
 
@@ -59,12 +60,45 @@ class Episode:
             with open(out / f"{name}.jsonl", "w", encoding="utf-8") as fh:
                 for row in rows:
                     fh.write(json.dumps(row, sort_keys=True) + "\n")
-        if include_closed:
-            closed = out / "_grader"
-            closed.mkdir(exist_ok=True)
-            _write_json(closed / "truth.json", self.truth)
-            _write_json(closed / "provenance.json", self.provenance)
+        if include_closed:  # closed grader files: never exposed to the policy process
+            _write_json(out / "truth.json", self.truth)
+            _write_json(out / "provenance.json", self.provenance)
         return out
+
+    @classmethod
+    def load(cls, directory: str | Path) -> Episode:
+        """Load an episode directory exactly as written (or as transformed by the jury): same ids, same order."""
+        src = Path(directory)
+
+        def read_json(name: str) -> Any:
+            with open(src / name, encoding="utf-8") as fh:
+                return json.load(fh)
+
+        def read_jsonl(name: str) -> list[dict]:
+            with open(src / name, encoding="utf-8") as fh:
+                return [json.loads(line) for line in fh if line.strip()]
+
+        with open(src / "ledger.csv", encoding="utf-8", newline="") as fh:
+            ledger = []
+            for row in csv.DictReader(fh):
+                rec: dict[str, Any] = {k: (None if v == "null" else v) for k, v in row.items()}
+                for k in LEDGER_INT_COLUMNS:
+                    rec[k] = int(rec[k])
+                ledger.append(rec)
+        with open(src / "fx.csv", encoding="utf-8", newline="") as fh:
+            fx = [dict(r) for r in csv.DictReader(fh)]
+        provenance = read_json("provenance.json") if (src / "provenance.json").exists() else {}
+        return cls(manifest=read_json("manifest.json"), policy=read_json("policy.json"), ledger=ledger,
+                   invoices=read_jsonl("invoices.jsonl"), payments=read_jsonl("payments.jsonl"), fx=fx,
+                   truth=read_json("truth.json"), provenance=provenance)
+
+    def evidence_ids(self) -> set[str]:
+        """Every id the policy can reach through the tools (valid evidence_ids)."""
+        ids = {r["row_id"] for r in self.ledger}
+        ids |= {d["doc_id"] for d in self.invoices} | {d["doc_id"] for d in self.payments}
+        ids |= {d["invoice_id"] for d in self.invoices} | {d["payment_id"] for d in self.payments}
+        ids |= {fx_id(r["date"], r["source_currency"], r["target_currency"]) for r in self.fx}
+        return ids | {"manifest", "policy"}
 
 
 def _write_json(path: Path, data: Any) -> None:
@@ -205,6 +239,35 @@ def _render(world: World, rename: _Renamer, shuffle_rng=None) -> tuple[dict, dic
     return {"ledger": ledger, "invoices": invoices, "payments": payments, "fx": fx_rows}, row_lookup, {}
 
 
+def _public_row(row: dict, rename: _Renamer) -> dict:
+    return {"role": row["role"], "account": row["account"], "debit_minor": row["debit"],
+            "credit_minor": row["credit"], "entity_id": rename(row["entity"]), "invoice_id": rename(row["inv"]),
+            "payment_id": rename(row["pay"]), "txn_currency": row["txn_currency"],
+            "txn_amount_minor": row["txn_amount"], "fx_rate": row["fx_rate"]}
+
+
+def _public_journal_key(key: str, rename: _Renamer) -> str:
+    kind, internal = key.split(":", 1)
+    return f"{'invoice' if kind == 'inv' else 'payment'}:{rename(internal)}"
+
+
+def _public_mutation(mutation: dict, rename: _Renamer) -> dict:
+    """Causal change with public ids: bookings before/after the injection, plus scalar details."""
+    out: dict[str, Any] = {}
+    for key, value in mutation.items():
+        if key in ("journals_before", "journals_after"):
+            out[key] = {_public_journal_key(k, rename): (None if rows is None else
+                                                         [_public_row(r, rename) for r in rows])
+                        for k, rows in value.items()}
+        elif key == "duplicate_journal":
+            out[key] = [_public_row(r, rename) for r in value]
+        elif key in ("copied_from", "new_document"):
+            out[key] = rename(value)
+        else:
+            out[key] = value
+    return out
+
+
 def _resolve_evidence(world: World, rename: _Renamer, row_lookup: dict, ref: tuple) -> str:
     if ref[0] == "doc":
         obj = world.invoices.get(ref[1]) or world.payments[ref[1]]
@@ -293,7 +356,7 @@ def generate_episode(seed: int, config: Any = None) -> Episode:
     for i, t in enumerate(truth_issues):
         t["issue_id"] = f"ISS-{i + 1:02d}"
         provenance_issues.append({"issue_id": t["issue_id"], "variant": t["variant"], "scenario": t["scenario"],
-                                  "causal_change": t.pop("_mutation")})
+                                  "causal_change": _public_mutation(t.pop("_mutation"), rename)})
 
     currencies = sorted({world.base, *world.foreign})
     manifest = {
@@ -314,9 +377,17 @@ def generate_episode(seed: int, config: Any = None) -> Episode:
         "config": cfg.to_dict(), "env_version": ENV_VERSION, "generation_log": log, "issues": provenance_issues,
         "distractors": sorted({f"{t}:{rename(k)}" for k, o in {**world.invoices, **world.payments}.items()
                                for t in o.tags if t != "injected_duplicate"}),
-        "id_map": dict(sorted(rename.map.items())),
     }
-    twin_tables, _, _ = _render(twin, rename)
+    # clean twin: same documents/ids, fresh row/journal ids (they are different rows)
+    twin_rename = _Renamer(make_rng("twin-ids", seed, fingerprint, cfg.id_salt))
+    twin_rename.map = {k: v for k, v in rename.map.items() if k[0] in "EIPD"}
+    twin_rename.used = set(rename.used)
+    twin_tables, _, _ = _render(twin, twin_rename)
     clean_twin = {"manifest": manifest, "policy": _policy(world), **twin_tables}
+    provenance["clean_books"] = {
+        "description": "Ledger of the same documents booked by the clean rules before any injection "
+                       "(row/journal ids are distinct from the published ledger).",
+        "ledger": twin_tables["ledger"],
+    }
     return Episode(manifest=manifest, policy=_policy(world), clean_twin=clean_twin, truth=truth,
                    provenance=provenance, **tables)

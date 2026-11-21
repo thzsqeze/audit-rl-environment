@@ -2,7 +2,7 @@
 
 The agent runs in another process and never shares memory with the grader. Requests:
   {"cmd": "reset", "seed": 3, "config": "dev"}
-  {"cmd": "step", "action": {"tool": "list_records", "args": {"table": "ledger"}}}
+  {"cmd": "step", "action": {"name": "list_records", "args": {"table": "ledger"}}}
 Responses mirror the Python API: {"observation", "info"} or
 {"observation", "reward", "terminated", "truncated", "info"}; malformed requests yield {"error": ...}.
 The grade report is written only to the evaluator log file (--grader-log), never to stdout.
@@ -20,7 +20,7 @@ from audit_env.env import AuditEnv
 MAX_REQUEST_BYTES = 1_000_000
 
 
-def serve(mode: str = "eval", grader_log: str | None = None, stdin: IO[str] = sys.stdin,
+def serve(mode: str = "closed", grader_log: str | None = None, stdin: IO[str] = sys.stdin,
           stdout: IO[str] = sys.stdout) -> None:
     env = AuditEnv(mode=mode)
     log = open(Path(grader_log), "a", encoding="utf-8") if grader_log else None  # noqa: SIM115

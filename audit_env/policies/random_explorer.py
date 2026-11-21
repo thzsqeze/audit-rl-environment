@@ -22,8 +22,10 @@ class RandomExplorerPolicy(Policy):
         self.n = 0
 
     def _absorb(self, obs):
-        res = obs.get("result") or {}
-        rows = res.get("rows") or ([res["record"]] if "record" in res else [])
+        res = obs.get("result")
+        if not isinstance(res, dict):
+            return
+        rows = res.get("records") or [res]
         for r in rows:
             for key, table in (("row_id", "ledger"), ("invoice_id", "invoices"), ("payment_id", "payments")):
                 if r.get(key) and (key != "invoice_id" or "total_minor" in r):
@@ -35,19 +37,19 @@ class RandomExplorerPolicy(Policy):
     def act(self, obs):
         self._absorb(obs)
         self.n += 1
-        if self.n > self.budget or obs.get("steps_remaining", 0) <= 1:
+        if self.n > self.budget or obs.get("remaining_steps", 0) <= 1:
             return self._guess()
         choice = self.rng.random()
         if choice < 0.5 or not self.seen:
             table = self.rng.choice(TABLES)
-            return {"tool": "list_records", "args": {"table": table, "limit": self.rng.randint(1, 50),
+            return {"name": "list_records", "args": {"table": table, "limit": self.rng.randint(1, 50),
                                                      "cursor": f"{table}:{self.rng.randint(0, 120)}"}}
         if choice < 0.75:
             table, rid = self.rng.choice(self.seen)
-            return {"tool": "get_record", "args": {"table": table, "id": rid}}
+            return {"name": "get_record", "args": {"table": table, "id": rid}}
         if choice < 0.9 and self.docs:
-            return {"tool": "get_document", "args": {"doc_id": self.rng.choice(self.docs)}}
-        return {"tool": "calculator", "args": {"expression": f"{self.rng.randint(1, 999)} * 1.05"}}
+            return {"name": "get_document", "args": {"doc_id": self.rng.choice(self.docs)}}
+        return {"name": "calculator", "args": {"expression": f"{self.rng.randint(1, 999)} * 1.05"}}
 
     def _guess(self):
         findings = []

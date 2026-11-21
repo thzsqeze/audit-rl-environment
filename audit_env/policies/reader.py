@@ -20,18 +20,18 @@ class TableReader(Policy):
 
     def read_step(self, obs: dict[str, Any]) -> dict[str, Any] | None:
         """Return the next list_records action, or None when all tables are read / budget is low."""
-        if self.pending and obs.get("ok") and obs.get("result", {}).get("table") == self.pending:
-            res = obs["result"]
-            self.data[self.pending].extend(res["rows"])
+        res = obs.get("result")
+        if self.pending and obs.get("error") is None and isinstance(res, dict) and "records" in res:
+            self.data[self.pending].extend(res["records"])
             self.cursor = res["next_cursor"]
             if self.cursor is None:
                 self.queue.pop(0)
         self.pending = None
-        if not self.queue or obs.get("steps_remaining", 0) <= self.reserve_steps:
+        if not self.queue or obs.get("remaining_steps", 0) <= self.reserve_steps:
             return None
         table = self.queue[0]
         self.pending = table
         args: dict[str, Any] = {"table": table, "limit": 50}
         if self.cursor:
             args["cursor"] = self.cursor
-        return {"tool": "list_records", "args": args}
+        return {"name": "list_records", "args": args}

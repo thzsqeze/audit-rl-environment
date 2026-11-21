@@ -21,7 +21,7 @@ episodes:
 
 trajectories:
 	$(PY) -m audit_env run --split train --mode train --policies random,reconciler,flag_all,oracle,rules_auditor --out artifacts/train
-	$(PY) -m audit_env run --split dev --mode eval --policies random,reconciler,flag_all,oracle,rules_auditor --out artifacts/dev
+	$(PY) -m audit_env run --split dev --mode closed --policies random,reconciler,flag_all,oracle,rules_auditor --out artifacts/dev
 
 demo:
 	$(PY) -m audit_env demo --seed 9 --config interacting

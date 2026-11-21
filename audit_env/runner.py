@@ -23,14 +23,14 @@ def run_episode(policy_name: str, seed: int, config: Any = None, mode: str = "tr
     policy.reset(obs, info, seed, truth)
     episode_id = info["episode_id"]
     traj = [{"episode_id": episode_id, "step": 0, "action": None, "observation": obs, "reward": 0.0,
-             "terminated": False, "truncated": False}]
+             "terminated": False, "truncated": False, "info": info}]
     step = 0
     while True:
         action = policy.act(obs)
-        obs, reward, terminated, truncated, _ = env.step(action)
+        obs, reward, terminated, truncated, step_info = env.step(action)
         step += 1
         traj.append({"episode_id": episode_id, "step": step, "action": action, "observation": obs,
-                     "reward": reward, "terminated": terminated, "truncated": truncated})
+                     "reward": reward, "terminated": terminated, "truncated": truncated, "info": step_info})
         if terminated or truncated:
             break
     report = env.grader_report()
@@ -43,19 +43,20 @@ def summarize(reports: list[dict]) -> dict[str, Any]:
     if not reports:
         return {}
     keys = ("precision", "recall", "f1", "reward", "steps", "wall_time_s")
-    out = {f"mean_{k}": round(mean(r[k] for r in reports), 4) for k in keys}
+    # invalid submissions have null metrics; they count as 0 in these diagnostic means
+    out = {f"mean_{k}": round(mean((r[k] or 0) for r in reports), 4) for k in keys}
     out.update({
         "episodes": len(reports),
         "invalid_submissions": sum(not r["valid"] for r in reports),
         "truncated": sum(r["truncated"] for r in reports),
-        "tp": sum(r["tp"] for r in reports), "fp": sum(r["fp"] for r in reports),
-        "fn": sum(r["fn"] for r in reports),
+        "tp": sum(r["tp"] or 0 for r in reports), "fp": sum(r["fp"] or 0 for r in reports),
+        "fn": sum(r["fn"] or 0 for r in reports),
         "max_wall_time_s": max(r["wall_time_s"] for r in reports),
     })
     return out
 
 
-def run_suite(policies: list[str], seeds: list[int], config: Any = None, mode: str = "eval",
+def run_suite(policies: list[str], seeds: list[int], config: Any = None, mode: str = "closed",
               out_dir: str | Path | None = None) -> dict[str, Any]:
     summary: dict[str, Any] = {"mode": mode, "seeds": seeds, "policies": {}}
     out = Path(out_dir) if out_dir else None

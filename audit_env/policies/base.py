@@ -18,4 +18,4 @@ class Policy:
         raise NotImplementedError
 
     def submit(self, findings: list[dict]) -> dict[str, Any]:
-        return {"tool": "submit", "args": {"episode_id": self.episode_id, "findings": findings[:30]}}
+        return {"name": "submit", "args": {"findings": {"episode_id": self.episode_id, "findings": findings[:30]}}}
