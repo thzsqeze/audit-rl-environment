@@ -1,72 +1,72 @@
 {
-  "env_version": "0.1.0",
+  "env_version": "0.2.0",
   "episodes": [
     {
-      "episode_id": "ep-b468b433ff",
+      "episode_id": "ep-809a0c161a",
       "seed": 0,
       "config": "train",
-      "issues": 8,
-      "ledger_rows": 247,
-      "documents": 120
+      "issues": 0,
+      "ledger_rows": 237,
+      "documents": 118
     },
     {
-      "episode_id": "ep-c947b4f64f",
+      "episode_id": "ep-e1e558206d",
       "seed": 1,
       "config": "train",
-      "issues": 8,
-      "ledger_rows": 238,
-      "documents": 121
+      "issues": 0,
+      "ledger_rows": 232,
+      "documents": 118
     },
     {
-      "episode_id": "ep-f3279b3380",
+      "episode_id": "ep-608ae23681",
       "seed": 2,
       "config": "train",
       "issues": 6,
-      "ledger_rows": 271,
-      "documents": 136
+      "ledger_rows": 268,
+      "documents": 135
     },
     {
-      "episode_id": "ep-a305d04483",
+      "episode_id": "ep-c6005c06f3",
       "seed": 3,
       "config": "train",
       "issues": 6,
-      "ledger_rows": 289,
-      "documents": 144
+      "ledger_rows": 288,
+      "documents": 145
     },
     {
-      "episode_id": "ep-b1c8055754",
+      "episode_id": "ep-44e1ec31cc",
       "seed": 4,
       "config": "train",
-      "issues": 1,
-      "ledger_rows": 313,
-      "documents": 156
+      "issues": 7,
+      "ledger_rows": 307,
+      "documents": 153
     },
     {
-      "episode_id": "ep-48168dc59e",
+      "episode_id": "ep-7c69061452",
       "seed": 5,
       "config": "train",
-      "issues": 10,
-      "ledger_rows": 232,
+      "issues": 0,
+      "ledger_rows": 224,
       "documents": 114
     },
     {
-      "episode_id": "ep-13810c5ed7",
+      "episode_id": "ep-f263becf4d",
       "seed": 6,
       "config": "train",
-      "issues": 7,
-      "ledger_rows": 283,
+      "issues": 8,
+      "ledger_rows": 282,
       "documents": 140
     },
     {
-      "episode_id": "ep-dcba854ab2",
+      "episode_id": "ep-4a7eb70784",
       "seed": 7,
       "config": "train",
-      "issues": 4,
-      "ledger_rows": 237,
-      "documents": 122
+      "issues": 5,
+      "ledger_rows": 231,
+      "documents": 119
     },
     {
-      "episode_id": "ep-e2d6a05d8f",
+      "episode_id": "ep-5ca2096128",
       "seed": 8,
       "config": {
         "extends": "train",
@@ -74,11 +74,11 @@
         "clean_probability": 1.0
       },
       "issues": 0,
-      "ledger_rows": 255,
-      "documents": 125
+      "ledger_rows": 260,
+      "documents": 128
     },
     {
-      "episode_id": "ep-88ffd248c9",
+      "episode_id": "ep-7546042f49",
       "seed": 9,
       "config": {
         "extends": "train",
@@ -96,7 +96,7 @@
         }
       },
       "issues": 7,
-      "ledger_rows": 281,
+      "ledger_rows": 280,
       "documents": 142
     }
   ]
