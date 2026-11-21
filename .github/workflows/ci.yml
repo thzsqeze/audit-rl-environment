@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install -r requirements-dev.txt && python -m pip install --no-deps -e .
+      - name: Lint
+        run: python -m ruff check .
+      - name: Tests
+        run: python -m pytest -q
+      - name: Single verification command
+        run: python -m audit_env check --skip-tests
+      - name: Committed episodes are up to date
+        run: |
+          make episodes PY=python
+          git diff --exit-code -- episodes
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-report
+          path: reports/
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t audit-rl-env .
+      - name: Offline check inside container
+        run: docker run --rm --network none --cpus 2 --memory 4g audit-rl-env
