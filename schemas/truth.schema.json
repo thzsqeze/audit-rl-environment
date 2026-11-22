@@ -20,8 +20,8 @@
         "properties": {
           "issue_id": {"$ref": "common.schema.json#/$defs/id"},
           "type": {"$ref": "common.schema.json#/$defs/issue_type"},
-          "variant": {"enum": ["copy", "missing", "partial", "misapplied", "utc_date", "stale_rate", "backdated",
-                               "utc_boundary"]},
+          "variant": {"enum": ["copy", "missing", "partial", "misapplied", "utc_date", "stale_rate", "due_date_rate",
+                               "backdated", "utc_boundary", "receipt_next_period"]},
           "scenario": {"enum": [null, "partial_fx_payment_boundary", "duplicate_with_misapplied_payment"]},
           "affected_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/id"}},
           "expected_amount_minor": {"type": "integer", "minimum": 1},

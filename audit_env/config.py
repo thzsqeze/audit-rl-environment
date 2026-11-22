@@ -18,10 +18,13 @@ DISTRACTORS: tuple[str, ...] = (
     "double_payment_refund",  # customer paid twice, excess parked in 2200 and refunded
     "unidentified_payment",  # payment without remittance, correctly parked in 2900
     "boundary_timestamp",  # documents whose UTC date and local date fall in different periods
+    "near_duplicate",  # same customer, lines and total as another invoice, but a different PO number
+    "partial_refund",  # customer paid twice, only part of the excess refunded (rest stays a credit in 2200)
+    "next_period_receipt",  # receipt dated in the next period: published, correctly not booked
 )
-FX_VARIANTS: tuple[str, ...] = ("utc_date", "stale_rate")
+FX_VARIANTS: tuple[str, ...] = ("utc_date", "stale_rate", "due_date_rate")
 ALLOCATION_VARIANTS: tuple[str, ...] = ("missing", "partial")
-CUTOFF_VARIANTS: tuple[str, ...] = ("backdated", "utc_boundary")
+CUTOFF_VARIANTS: tuple[str, ...] = ("backdated", "utc_boundary", "receipt_next_period")
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 
@@ -63,6 +66,9 @@ class GeneratorConfig:
             "double_payment_refund": _range(0, 1),
             "unidentified_payment": _range(0, 1),
             "boundary_timestamp": _range(1, 2),
+            "near_duplicate": _range(0, 1),
+            "partial_refund": _range(0, 1),
+            "next_period_receipt": _range(0, 1),
         }
     )
     # benign transformations (paired checks): same hidden history, different ids / order

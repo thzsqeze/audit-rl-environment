@@ -1,0 +1,29 @@
+{
+  "base_currency": "EUR",
+  "currency_exponents": {
+    "EUR": 2,
+    "USD": 2
+  },
+  "env_version": "0.3.0",
+  "episode_id": "ep-0c84ef1846",
+  "formats": {
+    "fx_rate": "decimal string",
+    "money": "integer minor units + currency code",
+    "timestamps": "ISO-8601 with UTC offset"
+  },
+  "period_end": "2026-10-31",
+  "period_start": "2026-10-01",
+  "record_counts": {
+    "documents": 137,
+    "fx": 75,
+    "invoices": 89,
+    "ledger": 277,
+    "payments": 48
+  },
+  "rounding": {
+    "mode": "half_up",
+    "unit": "minor"
+  },
+  "schema_version": "1.0.0",
+  "timezone": "+05:30"
+}

@@ -6,7 +6,7 @@
 
 * runtime — только стандартная библиотека Python ≥ 3.11: без сети, GPU и платных API;
 * контракт в стиле Gymnasium и протокол жюри (`judge_adapter.py`, [определения проверок](genesis-fintech-checks.md));
-* 4 типа ошибок, 2 сценария взаимодействующих ошибок, чистые компании и 6 видов отвлекающих случаев;
+* 4 типа ошибок, 2 сценария взаимодействующих ошибок, чистые компании и 9 видов отвлекающих случаев;
 * общий matcher и награда `clip(2*F1 - 1 - 0.002*inspection_steps, -1, 1)` с тестами на атакующие ответы;
 * все данные синтетические: никаких реальных компаний, людей, счетов и платежей.
 
@@ -105,7 +105,7 @@ SchemaStore().errors(findings_json, "findings")   # [] = валидно
 | `duplicate_invoice` | оба `invoice_id` | сумма счёта / валюта счёта |
 | `payment_allocation` | `[payment_id, invoice_id]` | недоприменённая сумма / валюта платежа |
 | `fx_conversion` | `[invoice_id]` или `[payment_id]` | \|проведено − по policy\| / базовая валюта |
-| `period_cutoff` | `[invoice_id]` | сумма счёта / валюта счёта |
+| `period_cutoff` | `[invoice_id]` (счёт) или `[payment_id]` (поступление) | сумма документа / валюта документа |
 
 Сравнение точное: ID, тип и валюта — строки как есть, сумма — целое, допуск τ = 0 для всех типов
 (ожидаемые суммы вычисляются по policy без неоднозначного округления). Подробно — [DESIGN.md](DESIGN.md).
@@ -117,10 +117,17 @@ SchemaStore().errors(findings_json, "findings")   # [] = валидно
 | нужен эпизод | config |
 |---|---|
 | чистый, обычная сверка / разбитый платёж / возврат / повторяющиеся суммы / граница периода и TZ | `clean_basic` / `clean_split_payment` / `clean_refund` / `clean_recurring` / `clean_boundary` |
+| чистый, «почти дубль» (тот же клиент, строки и сумма, другой PO) | `clean_near_duplicate` |
+| чистый, частичный возврат переплаты (остаток — кредит клиента в 2200) | `clean_partial_refund` |
+| чистый, поступление следующего периода (опубликовано, корректно не проведено) | `clean_next_period_receipt` |
 | одна ошибка заданного типа | `type_duplicate_invoice`, `type_payment_allocation[_missing\|_partial]`, `type_fx_conversion`, `type_period_cutoff` |
+| вариант FX: счёт пересчитан по курсу даты срока оплаты | `type_fx_conversion_due_date` |
+| вариант периода: поступление следующего периода проведено последним днём текущего | `type_period_cutoff_receipt` |
 | сценарий взаимодействия 1: частичный валютный платёж на границе периода (+ курс UTC-даты) | `scenario_partial_fx_payment_boundary` |
 | сценарий взаимодействия 2: дубль счёта + платёж зачтён на дубль | `scenario_duplicate_with_misapplied_payment` |
 | смешанный | `default`, `train`, `dev`, `interacting`, `clean` |
+| верх предложенных диапазонов: ≤ 200 документов, 12 ошибок (~330–370 проводок) | `large` |
+| нагрузочный: ~1 900 проводок, ~950 документов (выше предложенных 200 документов; только для лимитов) | `stress` |
 | безвредные преобразования (внутри генератора) | `{"extends": "...", "id_salt": "x", "shuffle_rows": true}` |
 
 Основные поля: `error_counts`, `scenario_counts`, `distractor_counts` (диапазоны `[min, max]`), `clean_probability`,

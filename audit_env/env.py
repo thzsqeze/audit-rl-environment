@@ -66,7 +66,7 @@ TASK = (
     "and submit findings with evidence. Issue types: duplicate_invoice, payment_allocation, fx_conversion, "
     "period_cutoff; their meaning, canonical affected_ids and amount conventions are in "
     "policy.finding_conventions. The books may be clean: correct-but-unusual cases (split or combined "
-    "payments, refunds, recurring amounts, timezone edges) are not issues. Submit "
+    "payments, full or partial refunds, recurring amounts, same-amount invoices for different purchase orders, next-period receipts that are not booked, timezone edges) are not issues. Submit "
     "{\"findings\": {\"episode_id\": ..., \"findings\": [{type, affected_ids, claimed_amount_minor, currency, "
     "evidence_ids, explanation}]}}: at most 30 findings, 10 evidence ids and 1000 explanation characters each. "
     "Ids, types and currencies are compared exactly; amounts are exact integers in minor units. "

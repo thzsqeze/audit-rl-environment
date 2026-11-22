@@ -1,0 +1,124 @@
+{
+  "amount_tolerance_minor": 0,
+  "episode_id": "ep-76b76fd61b",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-6UE4CL"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-3P36JJ",
+          "FX:2026-11-19:JPY:EUR",
+          "GL-6G73DP38"
+        ],
+        [
+          "DOC-3P36JJ",
+          "FX:2026-11-19:JPY:EUR",
+          "GL-S2DW4493"
+        ]
+      ],
+      "expected_amount_minor": 2528,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "due_date_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-YJZEYW"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-B2CZB3",
+          "FX:2026-11-23:GBP:EUR",
+          "GL-2WBVMRKK"
+        ],
+        [
+          "DOC-B2CZB3",
+          "FX:2026-11-23:GBP:EUR",
+          "GL-7XHGB9SM"
+        ]
+      ],
+      "expected_amount_minor": 2373,
+      "issue_id": "ISS-02",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "PMT-3FG9YK"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-S3U57V",
+          "FX:2026-11-30:JPY:EUR",
+          "GL-MLDK358B"
+        ]
+      ],
+      "expected_amount_minor": 32,
+      "issue_id": "ISS-03",
+      "scenario": "partial_fx_payment_boundary",
+      "type": "fx_conversion",
+      "variant": "utc_date"
+    },
+    {
+      "affected_ids": [
+        "INV-K9SFNM",
+        "PMT-3FG9YK"
+      ],
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "DOC-S3U57V",
+          "GL-URC6945H"
+        ]
+      ],
+      "expected_amount_minor": 45554,
+      "issue_id": "ISS-04",
+      "scenario": "partial_fx_payment_boundary",
+      "type": "payment_allocation",
+      "variant": "partial"
+    },
+    {
+      "affected_ids": [
+        "INV-LEMJ7G",
+        "PMT-DLULGR"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-7Y9ZRY",
+          "GL-H3QMHARA"
+        ]
+      ],
+      "expected_amount_minor": 326497,
+      "issue_id": "ISS-05",
+      "scenario": null,
+      "type": "payment_allocation",
+      "variant": "partial"
+    },
+    {
+      "affected_ids": [
+        "INV-LSRUYZ",
+        "PMT-Y3RX6T"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-GZPW5S",
+          "GL-BPFG7TEU"
+        ]
+      ],
+      "expected_amount_minor": 332122,
+      "issue_id": "ISS-06",
+      "scenario": null,
+      "type": "payment_allocation",
+      "variant": "partial"
+    }
+  ]
+}

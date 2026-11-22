@@ -1,0 +1,46 @@
+{
+  "extends": "default",
+  "config_id": "large",
+  "clean_probability": 0.0,
+  "n_customers": [
+    12,
+    20
+  ],
+  "n_period_invoices": [
+    100,
+    110
+  ],
+  "n_opening_invoices": [
+    4,
+    6
+  ],
+  "max_issues": 12,
+  "error_counts": {
+    "duplicate_invoice": [
+      2,
+      3
+    ],
+    "payment_allocation": [
+      2,
+      3
+    ],
+    "fx_conversion": [
+      2,
+      3
+    ],
+    "period_cutoff": [
+      2,
+      3
+    ]
+  },
+  "scenario_counts": {
+    "partial_fx_payment_boundary": [
+      1,
+      1
+    ],
+    "duplicate_with_misapplied_payment": [
+      1,
+      1
+    ]
+  }
+}

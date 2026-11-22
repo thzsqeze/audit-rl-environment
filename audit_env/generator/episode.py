@@ -222,7 +222,8 @@ def _render(world: World, rename: _Renamer, shuffle_rng=None) -> tuple[dict, dic
         })
     payments = []
     for pay in world.payments.values():
-        if not world.in_period(world.local(pay.ts)):
+        # out-of-period receipts are published only when they are part of the history (next_period_receipt)
+        if not world.in_period(world.local(pay.ts)) and "next_period_receipt" not in pay.tags:
             continue
         payments.append({
             "doc_id": rename(pay.doc), "payment_id": rename(pay.key), "entity_id": rename(pay.entity),
@@ -321,8 +322,9 @@ def _policy(world: World) -> dict[str, Any]:
                 "affected_ids": "[invoice_id] for invoice postings, [payment_id] for receipt postings",
                 "amount": "absolute difference between booked and correct base amount, in base currency"},
             "period_cutoff": {
-                "meaning": "an invoice dated outside the period was booked in this period",
-                "affected_ids": "[invoice_id]", "amount": "invoice total in invoice currency"},
+                "meaning": "an invoice or a receipt dated outside the period was booked in this period",
+                "affected_ids": "[invoice_id] for an invoice, [payment_id] for a receipt",
+                "amount": "invoice total / receipt amount, in the document currency"},
         },
         "evidence_ids": "ledger row_id, document doc_id or fx id 'FX:<date>:<source>:<target>'",
         "amount_tolerance_minor": AMOUNT_TOLERANCE_MINOR,
@@ -358,6 +360,7 @@ def generate_episode(seed: int, config: Any = None) -> Episode:
         provenance_issues.append({"issue_id": t["issue_id"], "variant": t["variant"], "scenario": t["scenario"],
                                   "causal_change": _public_mutation(t.pop("_mutation"), rename)})
 
+    injected_keys = {k for issue in issues for k in issue.affected}
     currencies = sorted({world.base, *world.foreign})
     manifest = {
         "schema_version": SCHEMA_VERSION, "env_version": ENV_VERSION, "episode_id": episode_id,
@@ -375,8 +378,9 @@ def generate_episode(seed: int, config: Any = None) -> Episode:
     provenance = {
         "episode_id": episode_id, "seed": seed, "config_id": cfg.config_id, "config_fingerprint": fingerprint,
         "config": cfg.to_dict(), "env_version": ENV_VERSION, "generation_log": log, "issues": provenance_issues,
+        # correct-but-unusual documents only: a candidate that an injector turned into an error is not a distractor
         "distractors": sorted({f"{t}:{rename(k)}" for k, o in {**world.invoices, **world.payments}.items()
-                               for t in o.tags if t != "injected_duplicate"}),
+                               for t in o.tags if t != "injected_duplicate" and k not in injected_keys}),
     }
     # clean twin: same documents/ids, fresh row/journal ids (they are different rows)
     twin_rename = _Renamer(make_rng("twin-ids", seed, fingerprint, cfg.id_salt))

@@ -46,10 +46,13 @@ def accounting_errors(public: dict[str, Any], *, require_in_period: bool) -> lis
         for li in inv["line_items"]:
             if li["quantity"] * li["unit_price_minor"] != li["amount_minor"]:
                 errors.append(f"invoice {inv['invoice_id']}: qty*price != amount")
+    booked_payments = {r["payment_id"] for r in public["ledger"] if r["payment_id"]}
     for pay in public["payments"]:
         parse_ts(pay["timestamp"])
-        if not books.in_period(books.local(pay["timestamp"])):
-            errors.append(f"payment {pay['payment_id']}: outside period")
+        # a receipt of the next period may be published (like next-period invoices) but never booked in clean books
+        if require_in_period and not books.in_period(books.local(pay["timestamp"])) and \
+                pay["payment_id"] in booked_payments:
+            errors.append(f"payment {pay['payment_id']}: outside period but booked in clean books")
         if pay["invoice_refs"] is not None:
             if sum(x["amount_minor"] for x in pay["invoice_refs"]) != pay["amount_minor"]:
                 errors.append(f"payment {pay['payment_id']}: refs != amount")
@@ -64,6 +67,8 @@ def accounting_errors(public: dict[str, Any], *, require_in_period: bool) -> lis
                 ar[r["invoice_id"]] += r["debit_minor"] - r["credit_minor"]
         remitted: dict[str, int] = defaultdict(int)
         for pay in public["payments"]:
+            if not books.in_period(books.local(pay["timestamp"])):
+                continue  # next-period receipts do not settle anything in this period
             for x in pay["invoice_refs"] or []:
                 remitted[x["invoice_id"]] += x["amount_minor"]
         issued = {r["invoice_id"] for r in public["ledger"]

@@ -1,0 +1,133 @@
+{
+  "amount_tolerance_minor": 0,
+  "episode_id": "ep-aa01187865",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-8S8B7F",
+        "INV-K2KSX4"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-9D66UE",
+          "DOC-LX58AG",
+          "GL-9G4LQ439",
+          "GL-TUSXSGRS"
+        ],
+        [
+          "DOC-9D66UE",
+          "DOC-LX58AG",
+          "GL-AY7K7LMX",
+          "GL-RUV8FCTG"
+        ]
+      ],
+      "expected_amount_minor": 607630,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-QQG8YP"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-KC4NQ2",
+          "FX:2026-01-15:KWD:EUR",
+          "GL-KQKRG6QM"
+        ],
+        [
+          "DOC-KC4NQ2",
+          "FX:2026-01-15:KWD:EUR",
+          "GL-9MF4445J"
+        ]
+      ],
+      "expected_amount_minor": 28,
+      "issue_id": "ISS-02",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-E6BTWB",
+        "PMT-JQ7J33"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-KDSCT6",
+          "GL-8RPXM6CM"
+        ]
+      ],
+      "expected_amount_minor": 2093140,
+      "issue_id": "ISS-03",
+      "scenario": null,
+      "type": "payment_allocation",
+      "variant": "missing"
+    },
+    {
+      "affected_ids": [
+        "INV-L2VN2J",
+        "PMT-XUTTF2"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-ZTEE4K",
+          "GL-EMRCKMPL"
+        ]
+      ],
+      "expected_amount_minor": 74160,
+      "issue_id": "ISS-04",
+      "scenario": null,
+      "type": "payment_allocation",
+      "variant": "missing"
+    },
+    {
+      "affected_ids": [
+        "INV-A7Q6CY"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-9D2NGU",
+          "GL-MKN9GC7F"
+        ],
+        [
+          "DOC-9D2NGU",
+          "GL-DYX9P2QR"
+        ]
+      ],
+      "expected_amount_minor": 629160,
+      "issue_id": "ISS-05",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "backdated"
+    },
+    {
+      "affected_ids": [
+        "INV-STZV6V"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-KG6G7S",
+          "GL-E6GTTNHC"
+        ],
+        [
+          "DOC-KG6G7S",
+          "GL-SAQRG7Z5"
+        ]
+      ],
+      "expected_amount_minor": 483500,
+      "issue_id": "ISS-06",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "backdated"
+    }
+  ]
+}

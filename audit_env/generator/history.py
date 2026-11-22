@@ -192,6 +192,25 @@ def _add_document_distractors(world: World) -> None:
         else:
             continue
         inv.tags.add("boundary_timestamp")
+    # near duplicates: same customer, currency, quantities, prices and total as an existing invoice, but a
+    # different purchase order (PO) in the line descriptions - a separate legitimate order, not a duplicate
+    last_day = world.period_end - dt.timedelta(days=2)
+    for _ in range(counts.get("near_duplicate", 0)):
+        pool = sorted((i for i in world.invoices.values() if i.kind == "period" and not i.tags
+                       and i.key not in world.reserved and world.local(i.issued_at) <= last_day),
+                      key=lambda i: i.key)
+        if not pool:
+            break
+        src = rng.choice(pool)
+        ref = f"PO-{rng.randint(10000, 99999)}-{rng.randint(100, 999)}"
+        while any(ref in li["description"] for li in src.line_items):
+            ref = f"PO-{rng.randint(10000, 99999)}-{rng.randint(100, 999)}"
+        items = [{**li, "description": f"{li['description'].rsplit(' (', 1)[0]} ({ref})"} for li in src.line_items]
+        day = world.local(src.issued_at) + dt.timedelta(days=rng.randint(1, 2))
+        near = _new_invoice(world, "period", _rand_local(world, day), entity=src.entity, currency=src.currency,
+                            items=items)
+        near.tags.add("near_duplicate")
+        world.reserved.update({src.key, near.key})
     # utc-boundary candidates for cut-off errors (next-period invoices issued just after midnight)
     if offset_hours > 0:
         hours = (0, max(0, int(offset_hours) - 1))
@@ -272,6 +291,30 @@ def build_payments(world: World) -> None:
         singles.remove(inv)
         world.reserved.add(inv.key)
 
+    # double payment, only part of the excess refunded: the rest correctly stays a customer credit in 2200
+    placed, attempts = 0, 0
+    while placed < counts.get("partial_refund", 0) and attempts < 30:
+        attempts += 1
+        cands = [i for i in singles if i.currency == world.base and world.local(i.issued_at) <= early]
+        if not cands:
+            break
+        inv = rng.choice(cands)
+        t1 = _payment_time(world, inv.issued_at, 1, 3)
+        t2 = _payment_time(world, t1, 1, 3) if t1 else None
+        t3 = _payment_time(world, t2, 1, 3) if t2 else None
+        if t3 is None:
+            continue
+        placed += 1
+        refunded = max(1, inv.total * rng.randint(20, 80) // 100)
+        p1 = _new_payment(world, inv, t1, inv.total, refs=[(inv.key, inv.total)])
+        p2 = _new_payment(world, inv, t2, inv.total, refs=[(inv.key, inv.total)])
+        p3 = _new_payment(world, inv, t3, refunded, refs=None, direction="out", refund_of=p2.key)
+        for x in (p1, p2, p3):
+            x.tags.add("partial_refund")
+            world.reserved.add(x.key)
+        singles.remove(inv)
+        world.reserved.add(inv.key)
+
     # unidentified receipts (no remittance) parked in suspense
     for _ in range(counts.get("unidentified_payment", 0)):
         day = rng.choice(_period_days(world))
@@ -295,6 +338,20 @@ def build_payments(world: World) -> None:
         if ts is None:
             continue
         _new_payment(world, inv, ts, inv.total, refs=[(inv.key, inv.total)])
+
+    # receipts dated in the first days of the next period for invoices still open at period end: the document is
+    # published, but by policy it is NOT booked in this period (candidates for receipt cut-off errors)
+    for _ in range(counts.get("next_period_receipt", 0)):
+        handled = {k for p in world.payments.values() if p.refs for k, _ in p.refs}
+        cands = [i for i in payable if i.kind == "period" and i.key not in handled and i.key not in world.reserved
+                 and not i.tags]
+        if not cands:
+            break
+        inv = rng.choice(cands)
+        ts = _rand_local(world, world.period_end + dt.timedelta(days=rng.randint(1, 5)), (9, 17))
+        pay = _new_payment(world, inv, ts, inv.total, refs=[(inv.key, inv.total)])
+        pay.tags.add("next_period_receipt")
+        world.reserved.update({inv.key, pay.key})
 
 
 def plan_bookings(world: World) -> None:

@@ -1,0 +1,20 @@
+{
+  "extends": "large",
+  "config_id": "stress",
+  "n_customers": [
+    25,
+    40
+  ],
+  "n_period_invoices": [
+    590,
+    640
+  ],
+  "n_opening_invoices": [
+    20,
+    30
+  ],
+  "n_next_period_invoices": [
+    4,
+    8
+  ]
+}

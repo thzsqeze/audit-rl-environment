@@ -128,7 +128,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def _check_episodes(results: dict) -> None:
     items = load_split("train") + load_split("dev")
-    presets = sorted({c for _, c, _ in JURY_MATRIX} | {"default", "interacting"})
+    presets = sorted(p.stem for p in CONFIG_DIR.glob("*.json") if p.stem != "splits")  # every documented preset
     items += [{"seed": s, "config": c} for c in presets for s in range(5000, 5005)]
     failures = []
     for item in items:
