@@ -9,19 +9,19 @@ return = shared reward (section 05); exp. return = experimental reward (grader/r
 
 | policy | episodes | P | R | F1 | return | exp. return | FP | FN | steps | time, s | max time, s | truncated | invalid |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| random | 20 | 0.000 | 0.000 | 0.200 | -0.610 | -0.610 | 13 | 20 | 22.6 | 0.212 | 0.226 | 0 | 0 |
-| reconciler | 20 | 0.052 | 0.375 | 0.189 | -0.635 | -0.633 | 141 | 11 | 12.8 | 0.223 | 0.376 | 0 | 0 |
-| flag_all | 20 | 0.000 | 0.000 | 0.000 | -1.000 | -1.000 | 600 | 20 | 4.3 | 0.201 | 0.210 | 0 | 0 |
-| oracle | 20 | 0.750 | 0.750 | 1.000 | 1.000 | 1.000 | 0 | 0 | 1.0 | 0.206 | 0.281 | 0 | 0 |
-| rules_auditor | 20 | 0.750 | 0.750 | 1.000 | 0.976 | 0.980 | 0 | 0 | 12.8 | 0.209 | 0.217 | 0 | 0 |
+| random | 20 | 0.000 | 0.000 | 0.050 | -0.902 | -0.902 | 20 | 20 | 22.4 | 0.212 | 0.223 | 0 | 0 |
+| reconciler | 20 | 0.052 | 0.375 | 0.189 | -0.635 | -0.633 | 141 | 11 | 12.8 | 0.208 | 0.216 | 0 | 0 |
+| flag_all | 20 | 0.000 | 0.000 | 0.000 | -1.000 | -1.000 | 600 | 20 | 4.3 | 0.202 | 0.225 | 0 | 0 |
+| oracle | 20 | 0.750 | 0.750 | 1.000 | 1.000 | 1.000 | 0 | 0 | 1.0 | 0.196 | 0.201 | 0 | 0 |
+| rules_auditor | 20 | 0.750 | 0.750 | 1.000 | 0.976 | 0.980 | 0 | 0 | 12.8 | 0.217 | 0.345 | 0 | 0 |
 
 ## By episode kind
 
 | policy | kind | episodes | F1 | return | FP | FN |
 |---|---|---|---|---|---|---|
-| random | clean | 5 | 0.800 | 0.560 | 2 | 0 |
-| random | single | 10 | 0.000 | -1.000 | 8 | 10 |
-| random | interacting | 5 | 0.000 | -1.000 | 3 | 10 |
+| random | clean | 5 | 0.200 | -0.606 | 5 | 0 |
+| random | single | 10 | 0.000 | -1.000 | 13 | 10 |
+| random | interacting | 5 | 0.000 | -1.000 | 2 | 10 |
 | reconciler | clean | 5 | 0.400 | -0.209 | 12 | 0 |
 | reconciler | single | 10 | 0.118 | -0.777 | 85 | 4 |
 | reconciler | interacting | 5 | 0.119 | -0.778 | 44 | 7 |
@@ -61,14 +61,17 @@ return = shared reward (section 05); exp. return = experimental reward (grader/r
 | flag_all | near_miss:type | fx_conversion | 72 |
 | flag_all | near_miss:type | payment_allocation | 46 |
 | flag_all | near_miss:type | period_cutoff | 82 |
-| random | clean_books:no_distractor_named | period_cutoff | 2 |
-| random | distractor:boundary_timestamp | duplicate_invoice | 1 |
-| random | distractor:partial_refund | fx_conversion | 1 |
-| random | distractor:recurring_invoice | fx_conversion | 1 |
-| random | near_miss:affected_ids | duplicate_invoice | 2 |
+| random | clean_books:no_distractor_named | duplicate_invoice | 1 |
+| random | clean_books:no_distractor_named | fx_conversion | 1 |
+| random | clean_books:no_distractor_named | payment_allocation | 2 |
+| random | clean_books:no_distractor_named | period_cutoff | 1 |
+| random | distractor:multi_invoice_payment | period_cutoff | 3 |
+| random | distractor:recurring_invoice | payment_allocation | 1 |
+| random | distractor:recurring_invoice | period_cutoff | 1 |
+| random | near_miss:affected_ids | duplicate_invoice | 1 |
 | random | near_miss:affected_ids | fx_conversion | 1 |
-| random | near_miss:type | duplicate_invoice | 1 |
-| random | near_miss:type | fx_conversion | 1 |
+| random | near_miss:type | duplicate_invoice | 3 |
+| random | near_miss:type | fx_conversion | 2 |
 | random | near_miss:type | payment_allocation | 2 |
 | random | near_miss:type | period_cutoff | 1 |
 | reconciler | clean_books:no_distractor_named | fx_conversion | 4 |
@@ -122,6 +125,6 @@ return = shared reward (section 05); exp. return = experimental reward (grader/r
 |---|---|---|---|
 | flag_all | 86 | 0 (0%) | list_records 66, submit 20 |
 | oracle | 20 | 0 (0%) | submit 20 |
-| random | 453 | 62 (14%) | calculator 54, get_document 45, get_record 106, list_records 228, submit 20 |
+| random | 449 | 50 (11%) | calculator 42, get_document 60, get_record 101, list_records 226, submit 20 |
 | reconciler | 255 | 0 (0%) | list_records 235, submit 20 |
 | rules_auditor | 255 | 0 (0%) | list_records 235, submit 20 |

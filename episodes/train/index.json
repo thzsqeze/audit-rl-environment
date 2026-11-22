@@ -1,8 +1,8 @@
 {
-  "env_version": "0.3.0",
+  "env_version": "0.3.1",
   "episodes": [
     {
-      "episode_id": "ep-aa01187865",
+      "episode_id": "ep-fa2fa1e744",
       "seed": 0,
       "config": "train",
       "issues": 6,
@@ -10,7 +10,7 @@
       "documents": 135
     },
     {
-      "episode_id": "ep-420497b6d4",
+      "episode_id": "ep-973da4a8cd",
       "seed": 1,
       "config": "train",
       "issues": 0,
@@ -18,7 +18,7 @@
       "documents": 130
     },
     {
-      "episode_id": "ep-f828eb6fd8",
+      "episode_id": "ep-766d01e99c",
       "seed": 2,
       "config": "train",
       "issues": 8,
@@ -26,7 +26,7 @@
       "documents": 116
     },
     {
-      "episode_id": "ep-b93669f1b5",
+      "episode_id": "ep-1621237d40",
       "seed": 3,
       "config": "train",
       "issues": 8,
@@ -34,7 +34,7 @@
       "documents": 148
     },
     {
-      "episode_id": "ep-3bca92af4c",
+      "episode_id": "ep-8fed464132",
       "seed": 4,
       "config": "train",
       "issues": 3,
@@ -42,7 +42,7 @@
       "documents": 152
     },
     {
-      "episode_id": "ep-aeeedda58b",
+      "episode_id": "ep-9016c0b186",
       "seed": 5,
       "config": "train",
       "issues": 8,
@@ -50,7 +50,7 @@
       "documents": 135
     },
     {
-      "episode_id": "ep-ce6e26fe80",
+      "episode_id": "ep-8457a98475",
       "seed": 6,
       "config": "train",
       "issues": 9,
@@ -58,7 +58,7 @@
       "documents": 140
     },
     {
-      "episode_id": "ep-73e0fc9834",
+      "episode_id": "ep-dcc173450a",
       "seed": 7,
       "config": "train",
       "issues": 5,
@@ -66,7 +66,7 @@
       "documents": 126
     },
     {
-      "episode_id": "ep-d9945063e0",
+      "episode_id": "ep-01cbf3613f",
       "seed": 8,
       "config": {
         "extends": "train",
@@ -78,7 +78,7 @@
       "documents": 103
     },
     {
-      "episode_id": "ep-be99095998",
+      "episode_id": "ep-87b355271d",
       "seed": 9,
       "config": {
         "extends": "train",

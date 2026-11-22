@@ -1,6 +1,6 @@
 # Демо: сценарий показа
 
-Всё ниже выполняется офлайн; выводы — реальные (ENV_VERSION 0.3.0). Для записи экрана:
+Всё ниже выполняется офлайн; выводы — реальные (ENV_VERSION 0.3.1). Для записи экрана:
 `asciinema rec docs/demo.cast` (Linux/macOS) или любая запись терминала, затем шаги 1–6 по порядку.
 Длительность ≈ 3 минуты (шаг 6 в Docker ≈ 1–2 минуты).
 
@@ -11,7 +11,7 @@ python -m audit_env demo --seed 9 --config interacting
 ```
 
 ```
-=== policy=reconciler episode=ep-7bd21d1106 ===
+=== policy=reconciler episode=ep-d8d65da4da ===
 step   1: list_records {'table': 'ledger', 'limit': 50} -> reward=0.0 terminated=False truncated=False
 ...
 P=0.21 R=0.50 F1=0.30 return=-0.422 steps=12 statuses=['affected_ids', ..., 'tp', 'tp']
@@ -30,7 +30,7 @@ import judge_adapter as ja
 ja.generate_episode(9, "type_period_cutoff_receipt", "/tmp/ep")        # открытые + закрытые файлы
 env = ja.make_env()
 obs, info = env.reset(0, {"mode": "closed", "episode_dir": "/tmp/ep"})
-# info: {'episode_id': 'ep-fe350f9b82', 'env_version': '0.3.0', 'schema_version': '1.0.0', 'mode': 'closed'}
+# info: {'episode_id': 'ep-b8ab0df0ae', 'env_version': '0.3.1', 'schema_version': '1.0.0', 'mode': 'closed'}
 env.step({"name": "list_records", "args": {"table": "payments", "cursor": None, "limit": 50}})
 # reward 0.0, terminated False, info {}
 env.step({"name": "submit", "args": {"findings": {"episode_id": obs["manifest"]["episode_id"], "findings": []}}})

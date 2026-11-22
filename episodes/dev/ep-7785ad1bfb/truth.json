@@ -1,0 +1,102 @@
+{
+  "amount_tolerance_minor": 0,
+  "episode_id": "ep-7785ad1bfb",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-2KCQ35",
+        "INV-8QBUR6"
+      ],
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "DOC-3R8QYD",
+          "DOC-LJWPAL",
+          "GL-6L8WUQW9",
+          "GL-R2ZCJXFL"
+        ],
+        [
+          "DOC-3R8QYD",
+          "DOC-LJWPAL",
+          "GL-HCCDHJXC",
+          "GL-YXV5QA37"
+        ]
+      ],
+      "expected_amount_minor": 1219902370,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-3GBEYS",
+        "INV-H6UD3D"
+      ],
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "DOC-54SR3A",
+          "DOC-GE344A",
+          "GL-RATWG299",
+          "GL-SHWTXVKG"
+        ],
+        [
+          "DOC-54SR3A",
+          "DOC-GE344A",
+          "GL-7LCRW28J",
+          "GL-U5YPYDFV"
+        ]
+      ],
+      "expected_amount_minor": 511710,
+      "issue_id": "ISS-02",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-5CCY67"
+      ],
+      "currency": "KZT",
+      "evidence_sets": [
+        [
+          "DOC-SPTMC3",
+          "FX:2026-12-17:USD:KZT",
+          "GL-FRKEVN9E"
+        ],
+        [
+          "DOC-SPTMC3",
+          "FX:2026-12-17:USD:KZT",
+          "GL-D5J3GRV5"
+        ]
+      ],
+      "expected_amount_minor": 11326207,
+      "issue_id": "ISS-03",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-P6AU73"
+      ],
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "DOC-HQK3PY",
+          "GL-LR34TECF"
+        ],
+        [
+          "DOC-HQK3PY",
+          "GL-5EPENPDF"
+        ]
+      ],
+      "expected_amount_minor": 144300,
+      "issue_id": "ISS-04",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "backdated"
+    }
+  ]
+}

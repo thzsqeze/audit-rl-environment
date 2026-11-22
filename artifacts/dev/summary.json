@@ -1,5 +1,5 @@
 {
-  "env_version": "0.3.0",
+  "env_version": "0.3.1",
   "mode": "closed",
   "isolated": false,
   "policies": {
@@ -7,17 +7,17 @@
       "mean_precision": 0,
       "mean_recall": 0,
       "mean_f1": 0.1,
-      "mean_reward": -0.8006,
-      "mean_experimental_reward": -0.8006,
-      "mean_steps": 16.7,
-      "mean_wall_time_s": 0.0251,
+      "mean_reward": -0.8038,
+      "mean_experimental_reward": -0.8038,
+      "mean_steps": 27.4,
+      "mean_wall_time_s": 0.0253,
       "episodes": 10,
       "invalid_submissions": 0,
       "truncated": 0,
       "tp": 0,
       "fp": 9,
       "fn": 41,
-      "max_wall_time_s": 0.0314,
+      "max_wall_time_s": 0.0294,
       "isolated": 0
     },
     "reconciler": {
@@ -27,14 +27,14 @@
       "mean_reward": -0.5662,
       "mean_experimental_reward": -0.5521,
       "mean_steps": 13.2,
-      "mean_wall_time_s": 0.0301,
+      "mean_wall_time_s": 0.0287,
       "episodes": 10,
       "invalid_submissions": 0,
       "truncated": 0,
       "tp": 22,
       "fp": 99,
       "fn": 19,
-      "max_wall_time_s": 0.038,
+      "max_wall_time_s": 0.0344,
       "isolated": 0
     },
     "flag_all": {
@@ -44,14 +44,14 @@
       "mean_reward": -1.0,
       "mean_experimental_reward": -1.0,
       "mean_steps": 4.5,
-      "mean_wall_time_s": 0.0282,
+      "mean_wall_time_s": 0.0276,
       "episodes": 10,
       "invalid_submissions": 0,
       "truncated": 0,
       "tp": 0,
       "fp": 300,
       "fn": 41,
-      "max_wall_time_s": 0.0361,
+      "max_wall_time_s": 0.0387,
       "isolated": 0
     },
     "oracle": {
@@ -61,14 +61,14 @@
       "mean_reward": 1.0,
       "mean_experimental_reward": 1.0,
       "mean_steps": 1,
-      "mean_wall_time_s": 0.0242,
+      "mean_wall_time_s": 0.0229,
       "episodes": 10,
       "invalid_submissions": 0,
       "truncated": 0,
       "tp": 41,
       "fp": 0,
       "fn": 0,
-      "max_wall_time_s": 0.0296,
+      "max_wall_time_s": 0.0284,
       "isolated": 0
     },
     "rules_auditor": {
@@ -78,14 +78,14 @@
       "mean_reward": 0.9756,
       "mean_experimental_reward": 0.9898,
       "mean_steps": 13.2,
-      "mean_wall_time_s": 0.0287,
+      "mean_wall_time_s": 0.028,
       "episodes": 10,
       "invalid_submissions": 0,
       "truncated": 0,
       "tp": 41,
       "fp": 0,
       "fn": 0,
-      "max_wall_time_s": 0.0348,
+      "max_wall_time_s": 0.0334,
       "isolated": 0
     }
   }

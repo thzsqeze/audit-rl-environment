@@ -302,13 +302,15 @@ def _policy(world: World) -> dict[str, Any]:
         "receipts": {
             "application": "A receipt is applied to the invoices in its invoice_refs, each up to that "
                            "invoice's open balance. Excess over open balances goes to 2200 and may be refunded. "
-                           "Receipts with invoice_refs=null cannot be identified and stay in 2900.",
+                           "Receipts with invoice_refs=null cannot be identified and stay in 2900. Receipts dated "
+                           "outside the period are neither applied nor booked in this period.",
         },
         "accounts": CHART_OF_ACCOUNTS,
         "null_convention": "missing references are explicit null (JSON null / 'null' in CSV)",
         "finding_conventions": {
             "duplicate_invoice": {
-                "meaning": "the same invoice (same customer, currency, line items and total) issued and "
+                "meaning": "the same invoice (same customer, currency, line items - each line's description "
+                           "including its PO/contract reference, quantity and price - and total) issued and "
                            "booked twice",
                 "affected_ids": "both invoice_ids", "amount": "invoice total in invoice currency"},
             "payment_allocation": {

@@ -1,0 +1,122 @@
+{
+  "amount_tolerance_minor": 0,
+  "episode_id": "ep-b8a651d79e",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-4KFY6H",
+        "INV-LG3QM7"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-29SUMT",
+          "DOC-WGQMWD",
+          "GL-2A2Q7NS6",
+          "GL-G6P5W2XY"
+        ],
+        [
+          "DOC-29SUMT",
+          "DOC-WGQMWD",
+          "GL-FTZLU8J8",
+          "GL-H3NVJSEM"
+        ]
+      ],
+      "expected_amount_minor": 343020,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-D73RQA",
+        "INV-KL3SN9"
+      ],
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "DOC-JJ29NV",
+          "DOC-SNEXGK",
+          "GL-5VGCW9V5",
+          "GL-PFKHEWFY"
+        ],
+        [
+          "DOC-JJ29NV",
+          "DOC-SNEXGK",
+          "GL-D27PPN6S",
+          "GL-RWBFWFZS"
+        ]
+      ],
+      "expected_amount_minor": 2291840,
+      "issue_id": "ISS-02",
+      "scenario": "duplicate_with_misapplied_payment",
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-KSYM72"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-GVQHJ6",
+          "FX:2026-09-09:JPY:EUR",
+          "GL-CRDCJWNL"
+        ],
+        [
+          "DOC-GVQHJ6",
+          "FX:2026-09-09:JPY:EUR",
+          "GL-UD4UJV8W"
+        ]
+      ],
+      "expected_amount_minor": 2753,
+      "issue_id": "ISS-03",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-MK327S"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-9LET3F",
+          "FX:2026-09-09:JPY:EUR",
+          "GL-B6DX6HL5"
+        ],
+        [
+          "DOC-9LET3F",
+          "FX:2026-09-09:JPY:EUR",
+          "GL-DCPFJ44E"
+        ]
+      ],
+      "expected_amount_minor": 3478,
+      "issue_id": "ISS-04",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-D73RQA",
+        "PMT-6ZGGB9"
+      ],
+      "currency": "JPY",
+      "evidence_sets": [
+        [
+          "DOC-DHW244",
+          "GL-ERZ36R78"
+        ]
+      ],
+      "expected_amount_minor": 2291840,
+      "issue_id": "ISS-05",
+      "scenario": "duplicate_with_misapplied_payment",
+      "type": "payment_allocation",
+      "variant": "misapplied"
+    }
+  ]
+}
