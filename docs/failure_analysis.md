@@ -5,24 +5,26 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 
 ## Policies
 
-| policy | episodes | P | R | F1 | return | FP | FN | steps | time, s | max time, s | truncated | invalid |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| random | 20 | 0.000 | 0.000 | 0.050 | -0.901 | 26 | 20 | 24.4 | 0.214 | 0.221 | 0 | 0 |
-| reconciler | 20 | 0.056 | 0.400 | 0.147 | -0.719 | 143 | 10 | 12.8 | 0.214 | 0.222 | 0 | 0 |
-| flag_all | 20 | 0.000 | 0.000 | 0.000 | -1.000 | 600 | 20 | 4.3 | 0.206 | 0.219 | 0 | 0 |
-| oracle | 20 | 0.750 | 0.750 | 1.000 | 1.000 | 0 | 0 | 1.0 | 0.200 | 0.208 | 0 | 0 |
-| rules_auditor | 20 | 0.750 | 0.750 | 1.000 | 0.976 | 0 | 0 | 12.8 | 0.217 | 0.237 | 0 | 0 |
+return = shared reward (section 05); exp. return = experimental reward (grader/reward.py), shown separately.
+
+| policy | episodes | P | R | F1 | return | exp. return | FP | FN | steps | time, s | max time, s | truncated | invalid |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| random | 20 | 0.000 | 0.000 | 0.200 | -0.610 | -0.610 | 13 | 20 | 22.6 | 0.212 | 0.226 | 0 | 0 |
+| reconciler | 20 | 0.052 | 0.375 | 0.189 | -0.635 | -0.633 | 141 | 11 | 12.8 | 0.223 | 0.376 | 0 | 0 |
+| flag_all | 20 | 0.000 | 0.000 | 0.000 | -1.000 | -1.000 | 600 | 20 | 4.3 | 0.201 | 0.210 | 0 | 0 |
+| oracle | 20 | 0.750 | 0.750 | 1.000 | 1.000 | 1.000 | 0 | 0 | 1.0 | 0.206 | 0.281 | 0 | 0 |
+| rules_auditor | 20 | 0.750 | 0.750 | 1.000 | 0.976 | 0.980 | 0 | 0 | 12.8 | 0.209 | 0.217 | 0 | 0 |
 
 ## By episode kind
 
 | policy | kind | episodes | F1 | return | FP | FN |
 |---|---|---|---|---|---|---|
-| random | clean | 5 | 0.200 | -0.604 | 7 | 0 |
-| random | single | 10 | 0.000 | -1.000 | 9 | 10 |
-| random | interacting | 5 | 0.000 | -1.000 | 10 | 10 |
-| reconciler | clean | 5 | 0.200 | -0.605 | 15 | 0 |
-| reconciler | single | 10 | 0.117 | -0.781 | 91 | 4 |
-| reconciler | interacting | 5 | 0.154 | -0.707 | 37 | 6 |
+| random | clean | 5 | 0.800 | 0.560 | 2 | 0 |
+| random | single | 10 | 0.000 | -1.000 | 8 | 10 |
+| random | interacting | 5 | 0.000 | -1.000 | 3 | 10 |
+| reconciler | clean | 5 | 0.400 | -0.209 | 12 | 0 |
+| reconciler | single | 10 | 0.118 | -0.777 | 85 | 4 |
+| reconciler | interacting | 5 | 0.119 | -0.778 | 44 | 7 |
 | flag_all | clean | 5 | 0.000 | -1.000 | 150 | 0 |
 | flag_all | single | 10 | 0.000 | -1.000 | 300 | 10 |
 | flag_all | interacting | 5 | 0.000 | -1.000 | 150 | 10 |
@@ -30,8 +32,8 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 | oracle | single | 10 | 1.000 | 1.000 | 0 | 0 |
 | oracle | interacting | 5 | 1.000 | 1.000 | 0 | 0 |
 | rules_auditor | clean | 5 | 1.000 | 0.978 | 0 | 0 |
-| rules_auditor | single | 10 | 1.000 | 0.976 | 0 | 0 |
-| rules_auditor | interacting | 5 | 1.000 | 0.976 | 0 | 0 |
+| rules_auditor | single | 10 | 1.000 | 0.977 | 0 | 0 |
+| rules_auditor | interacting | 5 | 1.000 | 0.975 | 0 | 0 |
 
 ## False positives by cause
 
@@ -43,48 +45,44 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 | flag_all | clean_books:no_distractor_named | fx_conversion | 39 |
 | flag_all | clean_books:no_distractor_named | payment_allocation | 34 |
 | flag_all | clean_books:no_distractor_named | period_cutoff | 34 |
-| flag_all | distractor:boundary_timestamp | duplicate_invoice | 2 |
-| flag_all | distractor:boundary_timestamp | fx_conversion | 2 |
-| flag_all | distractor:boundary_timestamp | payment_allocation | 2 |
-| flag_all | distractor:boundary_timestamp | period_cutoff | 2 |
-| flag_all | distractor:recurring_invoice | duplicate_invoice | 6 |
-| flag_all | distractor:recurring_invoice | fx_conversion | 6 |
-| flag_all | distractor:recurring_invoice | payment_allocation | 5 |
-| flag_all | distractor:recurring_invoice | period_cutoff | 5 |
-| flag_all | distractor:utc_boundary_candidate | duplicate_invoice | 1 |
-| flag_all | distractor:utc_boundary_candidate | fx_conversion | 1 |
-| flag_all | distractor:utc_boundary_candidate | payment_allocation | 1 |
-| flag_all | distractor:utc_boundary_candidate | period_cutoff | 1 |
-| flag_all | near_miss:affected_ids | duplicate_invoice | 38 |
+| flag_all | distractor:boundary_timestamp | duplicate_invoice | 4 |
+| flag_all | distractor:boundary_timestamp | fx_conversion | 4 |
+| flag_all | distractor:boundary_timestamp | payment_allocation | 4 |
+| flag_all | distractor:boundary_timestamp | period_cutoff | 4 |
+| flag_all | distractor:recurring_invoice | duplicate_invoice | 9 |
+| flag_all | distractor:recurring_invoice | fx_conversion | 9 |
+| flag_all | distractor:recurring_invoice | payment_allocation | 7 |
+| flag_all | distractor:recurring_invoice | period_cutoff | 7 |
+| flag_all | near_miss:affected_ids | duplicate_invoice | 39 |
 | flag_all | near_miss:affected_ids | fx_conversion | 36 |
-| flag_all | near_miss:affected_ids | payment_allocation | 52 |
-| flag_all | near_miss:affected_ids | period_cutoff | 12 |
-| flag_all | near_miss:type | duplicate_invoice | 74 |
-| flag_all | near_miss:type | fx_conversion | 76 |
+| flag_all | near_miss:affected_ids | payment_allocation | 49 |
+| flag_all | near_miss:affected_ids | period_cutoff | 13 |
+| flag_all | near_miss:type | duplicate_invoice | 69 |
+| flag_all | near_miss:type | fx_conversion | 72 |
 | flag_all | near_miss:type | payment_allocation | 46 |
-| flag_all | near_miss:type | period_cutoff | 86 |
-| random | clean_books:no_distractor_named | duplicate_invoice | 3 |
-| random | clean_books:no_distractor_named | payment_allocation | 1 |
-| random | clean_books:no_distractor_named | period_cutoff | 3 |
-| random | distractor:double_payment_refund | period_cutoff | 1 |
-| random | distractor:unidentified_payment | payment_allocation | 1 |
+| flag_all | near_miss:type | period_cutoff | 82 |
+| random | clean_books:no_distractor_named | period_cutoff | 2 |
+| random | distractor:boundary_timestamp | duplicate_invoice | 1 |
+| random | distractor:partial_refund | fx_conversion | 1 |
+| random | distractor:recurring_invoice | fx_conversion | 1 |
 | random | near_miss:affected_ids | duplicate_invoice | 2 |
 | random | near_miss:affected_ids | fx_conversion | 1 |
-| random | near_miss:affected_ids | payment_allocation | 4 |
-| random | near_miss:affected_ids | period_cutoff | 2 |
 | random | near_miss:type | duplicate_invoice | 1 |
-| random | near_miss:type | fx_conversion | 2 |
-| random | near_miss:type | payment_allocation | 1 |
-| random | near_miss:type | period_cutoff | 4 |
-| reconciler | clean_books:no_distractor_named | fx_conversion | 6 |
-| reconciler | distractor:boundary_timestamp | fx_conversion | 9 |
-| reconciler | distractor:boundary_timestamp | period_cutoff | 28 |
-| reconciler | distractor:boundary_timestamp+double_payment_refund | payment_allocation | 1 |
-| reconciler | distractor:double_payment_refund | payment_allocation | 10 |
+| random | near_miss:type | fx_conversion | 1 |
+| random | near_miss:type | payment_allocation | 2 |
+| random | near_miss:type | period_cutoff | 1 |
+| reconciler | clean_books:no_distractor_named | fx_conversion | 4 |
+| reconciler | distractor:boundary_timestamp | fx_conversion | 5 |
+| reconciler | distractor:boundary_timestamp | period_cutoff | 21 |
+| reconciler | distractor:boundary_timestamp+partial_refund | payment_allocation | 1 |
+| reconciler | distractor:double_payment_refund | payment_allocation | 4 |
+| reconciler | distractor:near_duplicate | duplicate_invoice | 6 |
+| reconciler | distractor:partial_refund | payment_allocation | 7 |
 | reconciler | distractor:recurring_invoice | duplicate_invoice | 75 |
 | reconciler | near_miss:affected_ids | fx_conversion | 1 |
 | reconciler | near_miss:evidence | duplicate_invoice | 5 |
-| reconciler | near_miss:type | fx_conversion | 8 |
+| reconciler | near_miss:type | fx_conversion | 10 |
+| reconciler | near_miss:type | period_cutoff | 2 |
 
 ## Missed issues (false negatives)
 
@@ -92,9 +90,9 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 |---|---|---|---|---|
 | flag_all | duplicate_invoice | copy | - | 3 |
 | flag_all | duplicate_invoice | copy | duplicate_with_misapplied_payment | 2 |
-| flag_all | fx_conversion | stale_rate | - | 2 |
-| flag_all | fx_conversion | stale_rate | partial_fx_payment_boundary | 1 |
-| flag_all | fx_conversion | utc_date | partial_fx_payment_boundary | 2 |
+| flag_all | fx_conversion | due_date_rate | - | 1 |
+| flag_all | fx_conversion | stale_rate | - | 1 |
+| flag_all | fx_conversion | utc_date | partial_fx_payment_boundary | 3 |
 | flag_all | payment_allocation | misapplied | duplicate_with_misapplied_payment | 2 |
 | flag_all | payment_allocation | missing | - | 2 |
 | flag_all | payment_allocation | partial | - | 1 |
@@ -103,9 +101,9 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 | flag_all | period_cutoff | utc_boundary | - | 1 |
 | random | duplicate_invoice | copy | - | 3 |
 | random | duplicate_invoice | copy | duplicate_with_misapplied_payment | 2 |
-| random | fx_conversion | stale_rate | - | 2 |
-| random | fx_conversion | stale_rate | partial_fx_payment_boundary | 1 |
-| random | fx_conversion | utc_date | partial_fx_payment_boundary | 2 |
+| random | fx_conversion | due_date_rate | - | 1 |
+| random | fx_conversion | stale_rate | - | 1 |
+| random | fx_conversion | utc_date | partial_fx_payment_boundary | 3 |
 | random | payment_allocation | misapplied | duplicate_with_misapplied_payment | 2 |
 | random | payment_allocation | missing | - | 2 |
 | random | payment_allocation | partial | - | 1 |
@@ -114,7 +112,7 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 | random | period_cutoff | utc_boundary | - | 1 |
 | reconciler | duplicate_invoice | copy | - | 3 |
 | reconciler | duplicate_invoice | copy | duplicate_with_misapplied_payment | 2 |
-| reconciler | fx_conversion | utc_date | partial_fx_payment_boundary | 2 |
+| reconciler | fx_conversion | utc_date | partial_fx_payment_boundary | 3 |
 | reconciler | payment_allocation | misapplied | duplicate_with_misapplied_payment | 2 |
 | reconciler | period_cutoff | utc_boundary | - | 1 |
 
@@ -124,6 +122,6 @@ Means are per episode; on clean episodes P = R = 0 by the brief's definition, F1
 |---|---|---|---|
 | flag_all | 86 | 0 (0%) | list_records 66, submit 20 |
 | oracle | 20 | 0 (0%) | submit 20 |
-| random | 487 | 55 (11%) | calculator 46, get_document 72, get_record 115, list_records 234, submit 20 |
+| random | 453 | 62 (14%) | calculator 54, get_document 45, get_record 106, list_records 228, submit 20 |
 | reconciler | 255 | 0 (0%) | list_records 235, submit 20 |
 | rules_auditor | 255 | 0 (0%) | list_records 235, submit 20 |
