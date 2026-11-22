@@ -225,7 +225,8 @@ class AuditEnv:
         offset = 0
         if cursor is not None:
             prefix, _, number = cursor.partition(":") if isinstance(cursor, str) else ("", "", "")
-            if prefix != table or not number.isdigit() or int(number) > len(rows):
+            # ASCII digits only: str.isdigit() also accepts e.g. '²', which int() rejects (crash, found by fuzzing)
+            if prefix != table or not (number.isascii() and number.isdigit()) or int(number) > len(rows):
                 raise EnvError("invalid_cursor", "cursor is not valid for this table")
             offset = int(number)
         page = rows[offset:offset + limit]
