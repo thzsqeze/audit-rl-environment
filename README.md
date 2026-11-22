@@ -24,6 +24,8 @@ M01–M12) → самопроверку эпизодов всех пресето
 политик в закрытом режиме через `episode_dir` с поиском утечек → 20 парных проверок P01–P20
 (перестановка / смена ID / оба) на файлах. Отчёт — `reports/check_report.json`, ненулевой код при провале.
 
+Сценарий показа (reset → чтение → submit, закрытый режим, изоляция, stdio-сервер, разбор сбоев, Docker) — [docs/demo.md](docs/demo.md); измеренный разбор сбоев — [docs/failure_analysis.md](docs/failure_analysis.md).
+
 ## Подключение жюри (`judge_adapter.py`)
 
 ```python
