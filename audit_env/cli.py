@@ -194,6 +194,40 @@ def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
                             "passed": all(checks.values())}
 
 
+def _check_schemas(results: dict, out: Path, items: list[dict]) -> None:
+    """Validate the D01-D20 episode files and the closed-run trajectories against schemas/."""
+    from audit_env.generator import Episode
+    from audit_env.schema import SchemaStore
+
+    store = SchemaStore()
+    errors: list[str] = []
+
+    def check(instance: Any, name: str, where: str) -> None:
+        errs = store.errors(instance, name)
+        if errs and len(errors) < 20:
+            errors.append(f"{where}: {name}: {errs[0]}")
+
+    checked = 0
+    for item in items:
+        ep = Episode.load(item["dir"])
+        for name, value in (("manifest", ep.manifest), ("policy", ep.policy), ("truth", ep.truth)):
+            check(value, name, item["id"])
+        for name, rows in (("ledger_row", ep.ledger), ("invoice", ep.invoices), ("payment", ep.payments),
+                           ("fx_row", ep.fx)):
+            for row in rows:
+                check(row, name, item["id"])
+        checked += 1
+    lines = 0
+    with open(out / "trajectories.jsonl", encoding="utf-8") as fh:
+        for n, line in enumerate(fh, start=1):
+            record = json.loads(line)
+            check(record, "trajectory_line", f"trajectories.jsonl:{n}")
+            if record["action"] is not None:
+                check(record["action"], "action", f"trajectories.jsonl:{n}")
+            lines += 1
+    results["schemas"] = {"episodes": checked, "trajectory_lines": lines, "errors": errors, "passed": not errors}
+
+
 def _replay(config: Any, actions: list[dict]) -> str:
     env = AuditEnv(mode="train")
     out: list[Any] = list(env.reset(0, config))
@@ -278,6 +312,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         results["jury_matrix"] = [{k: i[k] for k in ("id", "seed", "config", "kind")} for i in items]
         steps = [("tests", _check_tests), ("episode_validation", _check_episodes),
                  ("baselines", lambda r: _check_baselines(r, out, items)),
+                 ("schemas", lambda r: _check_schemas(r, out, items)),
                  ("paired_checks", lambda r: _check_pairs(r, items, Path(tmp) / "pairs"))]
         if args.skip_tests:
             steps = steps[1:]

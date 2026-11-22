@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "truth.schema.json",
+  "title": "truth.json (closed, grader only)",
+  "description": "Reference issues. Never shown to the policy. evidence_sets lists every acceptable minimal evidence set; a finding needs one complete set.",
+  "type": "object",
+  "required": ["episode_id", "amount_tolerance_minor", "issues"],
+  "additionalProperties": false,
+  "properties": {
+    "episode_id": {"$ref": "common.schema.json#/$defs/id"},
+    "amount_tolerance_minor": {"type": "integer", "minimum": 0},
+    "issues": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "required": ["issue_id", "type", "variant", "scenario", "affected_ids", "expected_amount_minor", "currency",
+                     "evidence_sets"],
+        "additionalProperties": false,
+        "properties": {
+          "issue_id": {"$ref": "common.schema.json#/$defs/id"},
+          "type": {"$ref": "common.schema.json#/$defs/issue_type"},
+          "variant": {"enum": ["copy", "missing", "partial", "misapplied", "utc_date", "stale_rate", "backdated",
+                               "utc_boundary"]},
+          "scenario": {"enum": [null, "partial_fx_payment_boundary", "duplicate_with_misapplied_payment"]},
+          "affected_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/id"}},
+          "expected_amount_minor": {"type": "integer", "minimum": 1},
+          "currency": {"$ref": "common.schema.json#/$defs/currency"},
+          "evidence_sets": {
+            "type": "array", "minItems": 1,
+            "items": {"type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true,
+                      "items": {"$ref": "common.schema.json#/$defs/id"}}
+          }
+        }
+      }
+    }
+  }
+}

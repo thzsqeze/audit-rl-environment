@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payment.schema.json",
+  "title": "payments.jsonl line",
+  "description": "Payment document (table 'payments', also get_document). invoice_refs=null means no usable remittance; refund_of links an outgoing refund to the receipt it refunds. entity_id, direction and refund_of are documented extras.",
+  "type": "object",
+  "required": ["doc_id", "payment_id", "timestamp", "currency", "amount_minor", "invoice_refs", "entity_id", "direction",
+               "refund_of"],
+  "additionalProperties": false,
+  "properties": {
+    "doc_id": {"$ref": "common.schema.json#/$defs/id"},
+    "payment_id": {"$ref": "common.schema.json#/$defs/id"},
+    "timestamp": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "currency": {"$ref": "common.schema.json#/$defs/currency"},
+    "amount_minor": {"$ref": "common.schema.json#/$defs/minor_units"},
+    "invoice_refs": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["invoice_id", "amount_minor"],
+        "additionalProperties": false,
+        "properties": {
+          "invoice_id": {"$ref": "common.schema.json#/$defs/id"},
+          "amount_minor": {"$ref": "common.schema.json#/$defs/minor_units"}
+        }
+      }
+    },
+    "entity_id": {"$ref": "common.schema.json#/$defs/nullable_id"},
+    "direction": {"enum": ["in", "out"]},
+    "refund_of": {"$ref": "common.schema.json#/$defs/nullable_id"}
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "Shared definitions",
+  "description": "Value formats of section 03 of the brief: ISO-8601 timestamps with an offset, integer minor units, decimal-string FX rates, explicit null for missing references.",
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "description": "Opaque identifier, compared as an exact string. The jury may rename ids, so no format is imposed."},
+    "nullable_id": {"type": ["string", "null"], "minLength": 1},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"},
+    "utc_offset": {"type": "string", "pattern": "^[+-][0-9]{2}:[0-9]{2}$"},
+    "decimal_string": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$"},
+    "minor_units": {"type": "integer", "minimum": 0, "description": "Money in integer minor units of the record's currency."},
+    "issue_type": {"enum": ["duplicate_invoice", "payment_allocation", "fx_conversion", "period_cutoff"]},
+    "table": {"enum": ["ledger", "invoices", "payments", "fx"]}
+  }
+}

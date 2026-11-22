@@ -80,6 +80,24 @@ ja.score_episode(output_dir, findings_json, inspection_steps)
 * `provenance.json`: журнал генерации, для каждой ошибки — проводки до/после изменения в публичных ID,
   а также `clean_books` — книга тех же документов до внесения ошибок.
 
+## Схемы (`schemas/`)
+
+JSON Schema draft 2020-12 для всех обменов и файлов: [`manifest`](schemas/manifest.schema.json),
+[`policy`](schemas/policy.schema.json), [`ledger_row`](schemas/ledger_row.schema.json),
+[`invoice`](schemas/invoice.schema.json), [`payment`](schemas/payment.schema.json), [`fx_row`](schemas/fx_row.schema.json),
+[`findings`](schemas/findings.schema.json) (объект submit), [`action`](schemas/action.schema.json),
+[`observation_reset`](schemas/observation_reset.schema.json), [`observation_step`](schemas/observation_step.schema.json),
+[`truth`](schemas/truth.schema.json) (закрытый), [`trajectory_line`](schemas/trajectory_line.schema.json);
+общие форматы — [`common`](schemas/common.schema.json). Проверяются офлайн собственным валидатором подмножества
+draft 2020-12 (`audit_env/schema.py`, только stdlib; неизвестные ключевые слова схемы — ошибка загрузки):
+`tests/test_schemas.py` (эпизоды, траектории, живые наблюдения, findings oracle, негативные случаи, совпадение
+схемы findings с `matcher.parse_submission`) и шаг `schemas` в `check` (матрица D01–D20 и её траектории).
+
+```python
+from audit_env.schema import SchemaStore
+SchemaStore().errors(findings_json, "findings")   # [] = валидно
+```
+
 ## Типы ошибок и канонические ответы
 
 | type | affected_ids | claimed_amount_minor / currency |
