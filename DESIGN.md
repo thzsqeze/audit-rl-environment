@@ -168,3 +168,33 @@
   это намеренное давление бюджета, а не недоступный факт: доказательства каждой ошибки доступны через get_record/get_document.
 * P и R на чистых эпизодах равны 0 по определению из ТЗ, поэтому усреднённые P/R ниже F1.
 * Награда не доказывает пригодность для реального аудита. Улучшение моделей не заявляется: обучение не проводилось.
+
+## 9. Конвейер и соответствие проверкам жюри
+
+```mermaid
+flowchart LR
+  cfg[config / preset] --> hist[скрытая история<br/>history.py]
+  hist --> clean[чистые проводки<br/>world.py]
+  clean --> inj[инъекции + provenance<br/>errors.py]
+  inj --> render[рендер, ID, truth<br/>episode.py]
+  render --> val{validate_episode<br/>rules.py по открытым данным}
+  val -->|открытые файлы| env[AuditEnv reset/step<br/>env.py]
+  env <-->|JSON-lines, только наблюдения| pol[политика в отдельном процессе<br/>policy_worker.py]
+  env -->|submit| grade[matcher + награда<br/>grader/]
+  val -->|truth, provenance| grade
+  grade --> rep[grades, траектории,<br/>failure_analysis]
+```
+
+| блок жюри (genesis-fintech-checks.md) | где проверяется у нас |
+|---|---|
+| C01–C04 reset/step, первое наблюдение, manifest | `tests/test_judge_adapter.py::test_c01_c04_*`, схемы `observation_reset`/`manifest` |
+| C05–C06 страницы ≤ 50, стабильные курсоры | `test_c05_c06_three_pages_no_gaps`, `tests/test_env.py::test_pagination_*` |
+| C07–C14 записи, документы, калькулятор, ошибки расходуют шаг | `test_c07_c14_*`, `tests/test_fuzz.py` (2 000 действий, некорректные курсоры) |
+| C15–C18 submit, действие 100, лимит шагов и 60 с | `tests/test_env.py::test_submit_*`, `test_step_limit_*`, `test_time_limit_*`, `tests/test_isolation.py` (зависание) |
+| C19 закрытый режим без награды | `test_c19_*`, `check` → `baselines.no_leaks_in_closed_mode` |
+| C20 нет закрытых данных ни в одном канале, изоляция | `test_c20_*`, `tests/test_isolation.py`, `check` → изолированные политики + поиск маркеров |
+| D01–D20 корректность данных и эталона | `validate_episode` (чистый двойник, правила по открытым данным, доступность доказательств); `check` → `episode_validation` по всем пресетам; `tests/test_data_variants.py` (независимые пересчёты новых вариантов) |
+| Matcher 1–20, M01–M12 | `tests/test_reward.py::test_judge_block3_*`, `test_judge_examples_*`, `test_m08`–`test_m12` |
+| Свойства награды §05 (молчание, дубли, «пометить всё», шаги) | `tests/test_reward.py`, `tests/test_experimental_reward.py`, `check` → `flag_all_negative`, `oracle_max_reward` |
+| P01–P20 повтор и перестановка/смена ID | `check` → `paired_checks` (20/20), `test_paired_transformation_*` (в т. ч. новые пресеты) |
+| Инженерия: одна команда, версии, траектории, разбор сбоев, ограничения | `docker run … audit-rl-env` / `make check`; `ENV_VERSION`, `config_version`, закреплённые зависимости; `schemas/trajectory_line`; §7 и `docs/failure_analysis.md`; §8 |
