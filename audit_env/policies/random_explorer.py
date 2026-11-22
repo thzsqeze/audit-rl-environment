@@ -15,7 +15,8 @@ class RandomExplorerPolicy(Policy):
 
     def reset(self, obs, info, seed, truth=None):
         super().reset(obs, info, seed, truth)
-        self.rng = random.Random(f"random-explorer:{seed}")
+        # fixed policy seed + the public episode id; never the generation seed of the episode
+        self.rng = random.Random(f"random-explorer:{seed}:{self.episode_id}")
         self.budget = self.rng.randint(3, 40)
         self.seen: list[tuple[str, str]] = []  # (table, id)
         self.docs: list[str] = []

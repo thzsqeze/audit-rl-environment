@@ -144,6 +144,25 @@ class AuditEnv:
             return self._finish(None, truncated=True, reason="step_limit", obs=obs)
         return obs, 0.0, False, False, {}
 
+    def time_left(self) -> float:
+        """Evaluator-side: seconds left in the episode time budget (60 s from reset, policy time included)."""
+        if self._episode is None or self._done:
+            return 0.0
+        return max(self.time_limit_s - (self._clock() - self._t0), 0.0)
+
+    def abort(self, reason: str) -> tuple[dict, float, bool, bool, dict]:
+        """Evaluator-side end of an episode whose policy hung, crashed or answered garbage.
+
+        Same outcome as the time/step limit: truncated=true and empty findings. Never called by a policy.
+        """
+        if self._episode is None:
+            raise RuntimeError("call reset() before abort()")
+        if self._done:
+            return self._obs(None, None), 0.0, self._terminated, self._truncated, {}
+        code = "time_limit" if reason == "time_limit" else "policy_error"
+        message = "episode time limit exceeded" if code == "time_limit" else "policy process failed"
+        return self._finish(None, truncated=True, reason=reason, obs=self._obs(None, EnvError(code, message)))
+
     def grader_report(self) -> dict[str, Any]:
         """Evaluator-side grade of the finished episode (never part of an observation)."""
         if self._report is None:

@@ -10,6 +10,8 @@ class Policy:
     needs_truth = False  # True only for the evaluator-side oracle
 
     def reset(self, obs: dict[str, Any], info: dict[str, Any], seed: int, truth: dict | None = None) -> None:
+        """`seed` is the policy's own seed (runner `policy_seed`), never the episode generation seed.
+        `truth` is always None: no policy reads the truth (the oracle gets findings via load_findings)."""
         self.episode_id = info["episode_id"]
         self.manifest = obs["manifest"]
         self.policy = obs["policy"]

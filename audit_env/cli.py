@@ -75,13 +75,14 @@ def cmd_run(args: argparse.Namespace) -> int:
     items = load_split(args.split) if args.split else [{"seed": s, "config": args.config} for s in args.seeds]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    summary: dict[str, Any] = {"env_version": ENV_VERSION, "mode": args.mode, "policies": {}}
+    summary: dict[str, Any] = {"env_version": ENV_VERSION, "mode": args.mode, "isolated": args.isolated,
+                               "policies": {}}
     with open(out / "trajectories.jsonl", "w", encoding="utf-8") as traj_fh, \
             open(out / "grades.jsonl", "w", encoding="utf-8") as grade_fh:
         for name in args.policies.split(","):
             reports = []
             for item in items:
-                traj, report = run_episode(name, item["seed"], item["config"], args.mode)
+                traj, report = run_episode(name, item["seed"], item["config"], args.mode, isolated=args.isolated)
                 reports.append(report)
                 for line in traj:
                     traj_fh.write(json.dumps({"policy": name, **line}, sort_keys=True) + "\n")
@@ -166,7 +167,8 @@ def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
         for name in (*BASELINES, "rules_auditor"):
             reports = []
             for item in items:
-                traj, report = run_episode(name, item["seed"], item["env_config"])
+                # closed run, policy in a separate locked-down process (jury "Граница доступа")
+                traj, report = run_episode(name, item["seed"], item["env_config"], isolated=True)
                 report["kind"] = item["kind"]
                 reports.append(report)
                 for line in traj:
@@ -189,6 +191,8 @@ def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
         "no_invalid_baseline_submissions": all(p["all"]["invalid_submissions"] == 0 for p in per_policy.values()),
         "within_time_limit": all(p["all"]["max_wall_time_s"] < 60 for p in per_policy.values()),
         "no_leaks_in_closed_mode": not leaks,
+        "policies_ran_isolated": all(p["all"]["isolated"] == p["all"]["episodes"] for p in per_policy.values()),
+        "no_policy_failures": all(p["all"]["truncated"] == 0 for p in per_policy.values()),
     }
     results["baselines"] = {"summary": per_policy, "checks": checks, "leaks": leaks[:20],
                             "passed": all(checks.values())}
@@ -369,6 +373,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--config", default="default")
     p.add_argument("--mode", choices=["train", "closed"], default="train")
     p.add_argument("--out", default="runs/latest")
+    p.add_argument("--isolated", action="store_true", help="run each policy in a separate locked-down process")
     p.set_defaults(fn=cmd_run)
 
     p = sub.add_parser("check", help="single verification command (tests, data, reward, reproducibility)")
