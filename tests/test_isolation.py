@@ -89,13 +89,49 @@ attempt('write_file', lambda: open('x.txt', 'w'))
 attempt('subprocess', lambda: __import__('subprocess').run(['echo', 'x']))
 attempt('socket', lambda: __import__('socket').create_connection(('127.0.0.1', 9), timeout=1))
 attempt('stdlib_lazy_import', lambda: __import__('fractions'))
+# bypasses found in review: low-level write inside the code, Windows API, UDP/DNS, hard links
+import os, socket
+pkg = os.path.dirname(w.__file__)
+attempt('os_open_write_in_code', lambda: os.close(os.open(os.path.join(pkg, '_probe.tmp'), os.O_WRONLY | os.O_CREAT)))
+attempt('os_open_read_outside', lambda: os.close(os.open({truth!r}, os.O_RDONLY)))
+attempt('udp_sendto', lambda: socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(b'x', ('127.0.0.1', 9)))
+attempt('dns', lambda: socket.gethostbyname('localhost'))
+attempt('hard_link', lambda: os.link({truth!r}, os.path.join(pkg, '_probe_link.tmp')))
+if os.name == 'nt':
+    import _winapi
+    attempt('winapi_createfile', lambda: _winapi.CreateFile({truth!r}, 0x80000000, 1, 0, 3, 0x80, 0))
+    attempt('winapi_createprocess', lambda: _winapi.CreateProcess(None, 'cmd /c echo x', None, None, 0, 0, None, None, None))
 print(__import__('json').dumps(results))
 """
     proc = _worker_snippet(code)
+    for leftover in ("_probe.tmp", "_probe_link.tmp"):
+        probe = REPO / "audit_env" / leftover
+        assert not probe.exists(), f"{leftover} was created"
     results = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert results == {"read_truth": "refused", "read_repo_episode": "refused", "list_episode_dir": "refused",
-                       "write_file": "refused", "subprocess": "refused", "socket": "refused",
-                       "stdlib_lazy_import": "allowed"}, results
+    expected = {"read_truth": "refused", "read_repo_episode": "refused", "list_episode_dir": "refused",
+                "write_file": "refused", "subprocess": "refused", "socket": "refused",
+                "stdlib_lazy_import": "allowed", "os_open_write_in_code": "refused",
+                "os_open_read_outside": "refused", "udp_sendto": "refused", "dns": "refused", "hard_link": "refused"}
+    if sys.platform == "win32":
+        expected.update(winapi_createfile="refused", winapi_createprocess="refused")
+    assert results == expected, results
+
+
+def test_endless_reply_line_is_a_policy_failure(monkeypatch):
+    monkeypatch.setattr(runner, "MAX_REPLY_CHARS", 1000)
+    script = "import sys\nfor _ in sys.stdin:\n    sys.stdout.write('x' * 5000); sys.stdout.flush()"
+    monkeypatch.setattr(runner, "policy_process_spec", lambda name, workdir: ([sys.executable, "-c", script], {}))
+    traj, report = run_episode("random", 9, "interacting", "closed", isolated=True)
+    assert report["truncated"] and report["end_reason"] == "policy_error"
+
+
+def test_hung_policy_cannot_stretch_the_episode_beyond_its_budget(monkeypatch):
+    monkeypatch.setattr(runner, "policy_process_spec",
+                        lambda name, workdir: ([sys.executable, "-c", "import time; time.sleep(30)"], {}))
+    env = AuditEnv(mode="closed", time_limit_s=1.0)
+    _, report = run_episode("random", 9, "interacting", env=env, isolated=True)
+    assert report["end_reason"] == "time_limit"
+    assert report["wall_time_s"] < 1.0 + runner.ISOLATION_GRACE_S + 1.0  # budget + grace + process teardown
 
 
 def test_policies_never_receive_the_generation_seed(monkeypatch):

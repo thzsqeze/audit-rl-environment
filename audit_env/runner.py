@@ -31,7 +31,8 @@ from typing import Any
 from audit_env.env import AuditEnv
 from audit_env.policies import POLICIES
 
-ISOLATION_GRACE_S = 2.0  # extra wait beyond the episode budget before a silent policy is stopped
+ISOLATION_GRACE_S = 0.25  # extra wait beyond the episode budget before a silent policy is stopped
+MAX_REPLY_CHARS = 2_000_000  # one answer line; longer output is treated as a broken policy
 
 
 class PolicyFailure(RuntimeError):
@@ -77,7 +78,13 @@ class RemotePolicy:
 
     def _pump(self) -> None:
         assert self.proc.stdout is not None
-        for line in self.proc.stdout:
+        while True:
+            line = self.proc.stdout.readline(MAX_REPLY_CHARS)
+            if not line:
+                break
+            if not line.endswith(chr(10)) and len(line) >= MAX_REPLY_CHARS:
+                self._lines.put("too long")  # bounded memory: never buffer an endless line
+                break
             self._lines.put(line)
         self._lines.put(None)
 

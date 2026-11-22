@@ -29,10 +29,16 @@ from typing import Any
 
 from audit_env.policies import POLICIES  # imports policies only: no environment, generator or grader
 
-_BLOCKED_EVENTS = ("subprocess.Popen", "os.system", "os.exec", "os.spawn", "os.posix_spawn", "os.fork",
-                   "os.forkpty", "os.startfile", "socket.connect", "socket.bind", "socket.getaddrinfo",
-                   "ctypes.dlopen", "ctypes.cdata", "urllib.Request", "shutil.copyfile", "shutil.rmtree",
-                   "os.remove", "os.rename", "os.mkdir", "os.chdir")
+# Audit-event prefixes refused after lock-down: processes, sockets/DNS, FFI, Windows API wrappers, links,
+# file-system changes. Found by review: _winapi.CreateFile/CreateProcess, socket.sendto/gethostbyname and
+# os.link bypassed the first version.
+_BLOCKED_EVENTS = ("subprocess.", "_posixsubprocess", "os.system", "os.exec", "os.spawn", "os.posix_spawn",
+                   "os.fork", "os.forkpty", "os.startfile", "os.kill", "os.putenv", "os.unsetenv", "socket.",
+                   "ctypes.", "mmap.", "_winapi.", "winreg.", "msvcrt.", "urllib.", "http.", "ftplib.", "smtplib.",
+                   "webbrowser.", "shutil.", "os.remove", "os.rename", "os.replace", "os.rmdir", "os.mkdir",
+                   "os.chdir", "os.chmod", "os.chown", "os.chflags", "os.utime", "os.truncate", "os.link",
+                   "os.symlink", "os.add_dll_directory", "sqlite3.", "fcntl.", "resource.", "pty.")
+_WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
 _PATH_EVENTS = ("os.listdir", "os.scandir", "glob.glob")  # allowed only inside the code roots (imports list dirs)
 
 
@@ -58,10 +64,16 @@ def lock_down() -> None:
 
     def hook(event: str, args: tuple) -> None:
         if event == "open":
-            path, mode = args[0], args[1]
+            path, mode, flags = args[0], args[1], args[2]
             if isinstance(path, int):  # already-open descriptors (stdin/stdout)
                 return
-            if mode is not None and any(c in str(mode) for c in "wax+"):
+            # builtin open() reports a mode string; os.open() reports mode=None and integer flags
+            writes = (
+                (isinstance(mode, str) and any(c in mode for c in "wax+"))
+                or (isinstance(flags, int) and bool(flags & _WRITE_FLAGS))
+                or (mode is not None and not isinstance(mode, str))
+            )
+            if writes:
                 raise Refused("policy process may not write files")
             if not inside_code(path):
                 raise Refused("policy process may not read files outside the code")
