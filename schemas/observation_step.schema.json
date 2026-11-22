@@ -14,7 +14,14 @@
         {"type": "string", "pattern": "^-[0-9]+(\\.[0-9]+)?$", "description": "negative calculator result"},
         {
           "type": "object", "required": ["records", "next_cursor"], "additionalProperties": false,
-          "properties": {"records": {"type": "array", "maxItems": 50}, "next_cursor": {"type": ["string", "null"]}}
+          "properties": {
+            "records": {
+              "type": "array", "maxItems": 50,
+              "items": {"anyOf": [{"$ref": "ledger_row.schema.json"}, {"$ref": "invoice.schema.json"},
+                                  {"$ref": "payment.schema.json"}, {"$ref": "fx_row.schema.json"}]}
+            },
+            "next_cursor": {"type": ["string", "null"]}
+          }
         },
         {"type": "object", "required": ["accepted"], "additionalProperties": false, "properties": {"accepted": {"const": true}}},
         {"$ref": "ledger_row.schema.json"},

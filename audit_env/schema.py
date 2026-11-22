@@ -15,6 +15,7 @@ integer; `1.0` parsed by `json` is a number, not an integer.
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
 from typing import Any
@@ -37,8 +38,8 @@ def _json_type_ok(value: Any, name: str) -> bool:
         return isinstance(value, bool)
     if name == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
-    if name == "number":
-        return isinstance(value, int | float) and not isinstance(value, bool)
+    if name == "number":  # NaN/Infinity are not JSON numbers (json.loads accepts them as an extension)
+        return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
     if name == "string":
         return isinstance(value, str)
     if name == "array":
@@ -109,7 +110,7 @@ class SchemaStore:
                 out.append(f"{where}: shorter than {schema['minLength']}")
             if "maxLength" in schema and len(value) > schema["maxLength"]:
                 out.append(f"{where}: longer than {schema['maxLength']}")
-            if "pattern" in schema and not re.search(schema["pattern"], value):
+            if "pattern" in schema and not _pattern_ok(schema["pattern"], value):
                 out.append(f"{where}: {value!r} does not match {schema['pattern']}")
         if _json_type_ok(value, "number"):
             if "minimum" in schema and value < schema["minimum"]:
@@ -149,6 +150,13 @@ class SchemaStore:
                     out.append(f"{where}: matches none of anyOf")
                 if keyword == "oneOf" and passing != 1:
                     out.append(f"{where}: matches {passing} of oneOf (exactly 1 required)")
+
+
+def _pattern_ok(pattern: str, value: str) -> bool:
+    """ECMA-262 semantics for the anchors used here: '$' matches only at the very end (Python's '$' would
+    also match before a trailing newline, so 'KZT\\n' would pass '^[A-Z]{3}$')."""
+    ecma = re.sub(r"(?<!\\)\$", r"\\Z", pattern)
+    return re.search(ecma, value) is not None
 
 
 def _same(a: Any, b: Any) -> bool:

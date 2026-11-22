@@ -205,6 +205,19 @@ BAD_INSTANCES = [
     ("observation_step", {"result": None, "error": {"code": "not_found", "message": "x" * 201}, "remaining_steps": 1}),
     ("observation_step", {"result": None, "error": None, "remaining_steps": 1, "truth": []}),
     ("observation_step", {"result": {"records": [{}] * 51, "next_cursor": None}, "error": None, "remaining_steps": 1}),
+    ("observation_step", {"result": {"records": [{**LEDGER_ROW, "truth": 1}], "next_cursor": None}, "error": None,
+                          "remaining_steps": 1}),  # page records are validated too
+    ("fx_row", {"date": "2026-01-02\n", "source_currency": "EUR", "target_currency": "KZT", "rate": "1.5"}),
+    ("fx_row", {"date": "2026-01-02", "source_currency": "EUR\n", "target_currency": "KZT", "rate": "1.5\n"}),
+    ("trajectory_line", {"episode_id": "e", "step": 1, "action": None, "reward": float("nan"), "terminated": False,
+                         "truncated": False, "observation": {"result": None, "error": None, "remaining_steps": 1}}),
+    ("trajectory_line", {"episode_id": "e", "step": 1, "action": None, "reward": float("inf"), "terminated": False,
+                         "truncated": False, "observation": {"result": None, "error": None, "remaining_steps": 1}}),
+    ("findings", {"episode_id": "e", "findings": [{**GOOD_FINDING, "evidence_ids": ["D1", 2]}]}),
+    ("findings", {"episode_id": "e", "findings": [{**GOOD_FINDING, "affected_ids": "R1"}]}),
+    ("action", {"name": "list_records", "args": {"table": "ledger", "limit": 0}}),
+    ("action", {"name": "list_records", "args": {"table": "ledger", "limit": True}}),
+    ("action", {"name": "calculator", "args": {"expression": "1" * 301}}),
     ("trajectory_line", {"episode_id": "e", "step": 1, "action": None, "reward": 0.0, "terminated": False,
                          "observation": {"result": None, "error": None, "remaining_steps": 1}}),  # no truncated
     ("truth", {"episode_id": "e", "amount_tolerance_minor": 0, "issues": [
