@@ -356,11 +356,13 @@ def cmd_check(args: argparse.Namespace) -> int:
     results["elapsed_s"] = round(time.time() - started, 2)
     (out / "check_report.json").write_text(json.dumps(results, indent=2, default=str) + "\n")
     print("\nBaseline diagnostics, closed mode, jury-style matrix D01-D20 (5 clean, 10 single, 5 interacting):")
-    print(f"{'policy':<14}{'P':>7}{'R':>7}{'F1':>7}{'return':>9}{'steps':>7}{'time_s':>8}")
+    print(f"{'policy':<14}{'P':>7}{'R':>7}{'F1':>7}{'return':>9}{'exp_ret':>9}{'steps':>7}{'time_s':>8}")
     for name, s in results["baselines"]["summary"].items():
         a = s["all"]
         print(f"{name:<14}{a['mean_precision']:>7.3f}{a['mean_recall']:>7.3f}{a['mean_f1']:>7.3f}"
-              f"{a['mean_reward']:>9.3f}{a['mean_steps']:>7.1f}{a['mean_wall_time_s']:>8.3f}")
+              f"{a['mean_reward']:>9.3f}{a['mean_experimental_reward']:>9.3f}{a['mean_steps']:>7.1f}"
+              f"{a['mean_wall_time_s']:>8.3f}")
+    print("return = shared reward (section 05); exp_ret = experimental reward, reported separately")
     print(f"\npaired checks: {results['paired_checks']['passed_count']}/20 passed")
     print(f"report: {out / 'check_report.json'}")
     ok = all(results[n]["passed"] is not False for n, _ in steps)

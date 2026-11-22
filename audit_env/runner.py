@@ -209,7 +209,7 @@ def run_episode(policy_name: str, seed: int, config: Any = None, mode: str = "tr
 def summarize(reports: list[dict]) -> dict[str, Any]:
     if not reports:
         return {}
-    keys = ("precision", "recall", "f1", "reward", "steps", "wall_time_s")
+    keys = ("precision", "recall", "f1", "reward", "experimental_reward", "steps", "wall_time_s")
     # invalid submissions have null metrics; they count as 0 in these diagnostic means
     out = {f"mean_{k}": round(mean((r[k] or 0) for r in reports), 4) for k in keys}
     out.update({
