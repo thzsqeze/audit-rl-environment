@@ -1,0 +1,138 @@
+{
+  "amount_tolerance_minor": 0,
+  "episode_id": "ep-e9b1c06656",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-3RLEDY",
+        "INV-9244DG"
+      ],
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "DOC-2WR4TF",
+          "DOC-VCJKPP",
+          "GL-BN79YSJ9",
+          "GL-CCSFYZRC"
+        ],
+        [
+          "DOC-2WR4TF",
+          "DOC-VCJKPP",
+          "GL-JJZQ3K6B",
+          "GL-UJPUKLP4"
+        ]
+      ],
+      "expected_amount_minor": 136750,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-EAG2AV",
+        "INV-Q2TYBS"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-KYG8RK",
+          "DOC-QYB4JW",
+          "GL-ED7XY8KH",
+          "GL-LT398HMD"
+        ],
+        [
+          "DOC-KYG8RK",
+          "DOC-QYB4JW",
+          "GL-L7PH9YGU",
+          "GL-ZHBZT5RF"
+        ]
+      ],
+      "expected_amount_minor": 3780,
+      "issue_id": "ISS-02",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-AUHZ5T"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-25P2RR",
+          "FX:2026-11-18:KWD:EUR",
+          "GL-EGTVN63E"
+        ],
+        [
+          "DOC-25P2RR",
+          "FX:2026-11-18:KWD:EUR",
+          "GL-HX76WBQ7"
+        ]
+      ],
+      "expected_amount_minor": 251,
+      "issue_id": "ISS-03",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "PMT-63DDMS"
+      ],
+      "currency": "EUR",
+      "evidence_sets": [
+        [
+          "DOC-WZKSJ6",
+          "FX:2026-11-30:KWD:EUR",
+          "GL-GLBMQEAB"
+        ]
+      ],
+      "expected_amount_minor": 2937,
+      "issue_id": "ISS-04",
+      "scenario": "partial_fx_payment_boundary",
+      "type": "fx_conversion",
+      "variant": "utc_date"
+    },
+    {
+      "affected_ids": [
+        "INV-48Z4FL",
+        "PMT-63DDMS"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-WZKSJ6",
+          "GL-QQW277K7"
+        ]
+      ],
+      "expected_amount_minor": 1968372,
+      "issue_id": "ISS-05",
+      "scenario": "partial_fx_payment_boundary",
+      "type": "payment_allocation",
+      "variant": "partial"
+    },
+    {
+      "affected_ids": [
+        "INV-4AX6RM"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-6T3P3L",
+          "GL-KUV3PC9M"
+        ],
+        [
+          "DOC-6T3P3L",
+          "GL-CULCYMPL"
+        ]
+      ],
+      "expected_amount_minor": 656300,
+      "issue_id": "ISS-06",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "utc_boundary"
+    }
+  ]
+}

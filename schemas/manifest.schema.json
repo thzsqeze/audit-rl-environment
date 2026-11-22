@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manifest.schema.json",
+  "title": "manifest.json",
+  "description": "Episode manifest (open). Produced by audit_env/generator/episode.py; also the 'manifest' of the first observation.",
+  "type": "object",
+  "required": ["schema_version", "env_version", "episode_id", "base_currency", "currency_exponents", "period_start",
+               "period_end", "timezone", "record_counts", "rounding", "formats"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "env_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "episode_id": {"$ref": "common.schema.json#/$defs/id"},
+    "base_currency": {"$ref": "common.schema.json#/$defs/currency"},
+    "currency_exponents": {
+      "description": "Minor-unit exponent of every currency used in the episode (JPY 0, KWD 3, others 2).",
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 4}
+    },
+    "period_start": {"$ref": "common.schema.json#/$defs/date"},
+    "period_end": {"$ref": "common.schema.json#/$defs/date"},
+    "timezone": {"$ref": "common.schema.json#/$defs/utc_offset"},
+    "record_counts": {
+      "type": "object",
+      "required": ["ledger", "invoices", "payments", "fx", "documents"],
+      "additionalProperties": false,
+      "properties": {
+        "ledger": {"type": "integer", "minimum": 0},
+        "invoices": {"type": "integer", "minimum": 0},
+        "payments": {"type": "integer", "minimum": 0},
+        "fx": {"type": "integer", "minimum": 0},
+        "documents": {"type": "integer", "minimum": 0, "description": "invoices + payments"}
+      }
+    },
+    "rounding": {
+      "type": "object",
+      "required": ["mode", "unit"],
+      "additionalProperties": false,
+      "properties": {"mode": {"const": "half_up"}, "unit": {"const": "minor"}}
+    },
+    "formats": {"type": "object", "additionalProperties": {"type": "string"}}
+  }
+}

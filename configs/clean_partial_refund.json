@@ -1,0 +1,35 @@
+{
+  "extends": "default",
+  "config_id": "clean_partial_refund",
+  "clean_probability": 1.0,
+  "distractor_counts": {
+    "recurring_invoice": [
+      0,
+      0
+    ],
+    "split_payment": [
+      0,
+      0
+    ],
+    "multi_invoice_payment": [
+      0,
+      0
+    ],
+    "double_payment_refund": [
+      0,
+      0
+    ],
+    "unidentified_payment": [
+      0,
+      0
+    ],
+    "boundary_timestamp": [
+      0,
+      0
+    ],
+    "partial_refund": [
+      1,
+      1
+    ]
+  }
+}

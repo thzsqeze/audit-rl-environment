@@ -66,7 +66,7 @@ TASK = (
     "and submit findings with evidence. Issue types: duplicate_invoice, payment_allocation, fx_conversion, "
     "period_cutoff; their meaning, canonical affected_ids and amount conventions are in "
     "policy.finding_conventions. The books may be clean: correct-but-unusual cases (split or combined "
-    "payments, refunds, recurring amounts, timezone edges) are not issues. Submit "
+    "payments, full or partial refunds, recurring amounts, same-amount invoices for different purchase orders, next-period receipts that are not booked, timezone edges) are not issues. Submit "
     "{\"findings\": {\"episode_id\": ..., \"findings\": [{type, affected_ids, claimed_amount_minor, currency, "
     "evidence_ids, explanation}]}}: at most 30 findings, 10 evidence ids and 1000 explanation characters each. "
     "Ids, types and currencies are compared exactly; amounts are exact integers in minor units. "
@@ -144,6 +144,25 @@ class AuditEnv:
             return self._finish(None, truncated=True, reason="step_limit", obs=obs)
         return obs, 0.0, False, False, {}
 
+    def time_left(self) -> float:
+        """Evaluator-side: seconds left in the episode time budget (60 s from reset, policy time included)."""
+        if self._episode is None or self._done:
+            return 0.0
+        return max(self.time_limit_s - (self._clock() - self._t0), 0.0)
+
+    def abort(self, reason: str) -> tuple[dict, float, bool, bool, dict]:
+        """Evaluator-side end of an episode whose policy hung, crashed or answered garbage.
+
+        Same outcome as the time/step limit: truncated=true and empty findings. Never called by a policy.
+        """
+        if self._episode is None:
+            raise RuntimeError("call reset() before abort()")
+        if self._done:
+            return self._obs(None, None), 0.0, self._terminated, self._truncated, {}
+        code = "time_limit" if reason == "time_limit" else "policy_error"
+        message = "episode time limit exceeded" if code == "time_limit" else "policy process failed"
+        return self._finish(None, truncated=True, reason=reason, obs=self._obs(None, EnvError(code, message)))
+
     def grader_report(self) -> dict[str, Any]:
         """Evaluator-side grade of the finished episode (never part of an observation)."""
         if self._report is None:
@@ -206,7 +225,8 @@ class AuditEnv:
         offset = 0
         if cursor is not None:
             prefix, _, number = cursor.partition(":") if isinstance(cursor, str) else ("", "", "")
-            if prefix != table or not number.isdigit() or int(number) > len(rows):
+            # ASCII digits only: str.isdigit() also accepts e.g. '²', which int() rejects (crash, found by fuzzing)
+            if prefix != table or not (number.isascii() and number.isdigit()) or int(number) > len(rows):
                 raise EnvError("invalid_cursor", "cursor is not valid for this table")
             offset = int(number)
         page = rows[offset:offset + limit]

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "action.schema.json",
+  "title": "step(action)",
+  "description": "Judge action envelope {name, args}. A step that does not satisfy this schema is still accepted by the environment: it returns a bounded error and consumes one step.",
+  "oneOf": [
+    {
+      "type": "object", "required": ["name", "args"], "additionalProperties": false,
+      "properties": {
+        "name": {"const": "list_records"},
+        "args": {
+          "type": "object", "required": ["table"], "additionalProperties": false,
+          "properties": {
+            "table": {"$ref": "common.schema.json#/$defs/table"},
+            "cursor": {"type": ["string", "null"], "description": "null for the first page, then next_cursor"},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 50}
+          }
+        }
+      }
+    },
+    {
+      "type": "object", "required": ["name", "args"], "additionalProperties": false,
+      "properties": {
+        "name": {"const": "get_record"},
+        "args": {
+          "type": "object", "required": ["table", "id"], "additionalProperties": false,
+          "properties": {
+            "table": {"$ref": "common.schema.json#/$defs/table"},
+            "id": {"type": "string", "description": "row_id | invoice_id | payment_id | FX:<date>:<source>:<target>"}
+          }
+        }
+      }
+    },
+    {
+      "type": "object", "required": ["name", "args"], "additionalProperties": false,
+      "properties": {
+        "name": {"const": "get_document"},
+        "args": {
+          "type": "object", "required": ["doc_id"], "additionalProperties": false,
+          "properties": {"doc_id": {"type": "string", "description": "invoice/payment doc_id, 'manifest' or 'policy'"}}
+        }
+      }
+    },
+    {
+      "type": "object", "required": ["name", "args"], "additionalProperties": false,
+      "properties": {
+        "name": {"const": "calculator"},
+        "args": {
+          "type": "object", "required": ["expression"], "additionalProperties": false,
+          "properties": {"expression": {"type": "string", "maxLength": 300, "description": "numbers and + - * / ( ) only"}}
+        }
+      }
+    },
+    {
+      "type": "object", "required": ["name", "args"], "additionalProperties": false,
+      "properties": {
+        "name": {"const": "submit"},
+        "args": {
+          "type": "object", "required": ["findings"], "additionalProperties": false,
+          "properties": {"findings": {"$ref": "findings.schema.json"}}
+        }
+      }
+    }
+  ]
+}

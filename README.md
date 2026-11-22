@@ -6,7 +6,7 @@
 
 * runtime — только стандартная библиотека Python ≥ 3.11: без сети, GPU и платных API;
 * контракт в стиле Gymnasium и протокол жюри (`judge_adapter.py`, [определения проверок](genesis-fintech-checks.md));
-* 4 типа ошибок, 2 сценария взаимодействующих ошибок, чистые компании и 6 видов отвлекающих случаев;
+* 4 типа ошибок, 2 сценария взаимодействующих ошибок, чистые компании и 9 видов отвлекающих случаев;
 * общий matcher и награда `clip(2*F1 - 1 - 0.002*inspection_steps, -1, 1)` с тестами на атакующие ответы;
 * все данные синтетические: никаких реальных компаний, людей, счетов и платежей.
 
@@ -19,10 +19,14 @@ docker run --rm --network none --cpus 2 --memory 4g audit-rl-env      # == pytho
 
 Рабочая директория в контейнере — `/app` (корень репозитория). Локально: `make install && make check`.
 
-`check` делает: тесты (`pytest`, 120+ тестов, в т. ч. копии опубликованных блоков C01–C20, matcher 1–20,
-M01–M12) → самопроверку эпизодов всех пресетов → генерацию матрицы D01–D20 в каталоги и прогон 4 базовых
-политик в закрытом режиме через `episode_dir` с поиском утечек → 20 парных проверок P01–P20
-(перестановка / смена ID / оба) на файлах. Отчёт — `reports/check_report.json`, ненулевой код при провале.
+`check` делает: тесты (`pytest`, 260+ тестов, в т. ч. копии опубликованных блоков C01–C20, matcher 1–20,
+M01–M12, фаззинг 2 000 действий, изоляция, схемы) → самопроверку эпизодов каждого пресета → генерацию матрицы
+D01–D20 в каталоги и прогон 4 базовых политик (+ `rules_auditor`) в закрытом режиме через `episode_dir`, каждая
+политика — в отдельном заблокированном процессе, с поиском утечек → валидацию файлов и траекторий по `schemas/` →
+измеренный разбор сбоев (`reports/failure_analysis.md`) → 20 парных проверок P01–P20 (перестановка / смена ID /
+оба) на файлах. Отчёт — `reports/check_report.json` (+ `trajectories.jsonl`, `grades.jsonl`), ненулевой код при провале.
+
+Сценарий показа (reset → чтение → submit, закрытый режим, изоляция, stdio-сервер, разбор сбоев, Docker) — [docs/demo.md](docs/demo.md); измеренный разбор сбоев — [docs/failure_analysis.md](docs/failure_analysis.md).
 
 ## Подключение жюри (`judge_adapter.py`)
 
@@ -80,6 +84,24 @@ ja.score_episode(output_dir, findings_json, inspection_steps)
 * `provenance.json`: журнал генерации, для каждой ошибки — проводки до/после изменения в публичных ID,
   а также `clean_books` — книга тех же документов до внесения ошибок.
 
+## Схемы (`schemas/`)
+
+JSON Schema draft 2020-12 для всех обменов и файлов: [`manifest`](schemas/manifest.schema.json),
+[`policy`](schemas/policy.schema.json), [`ledger_row`](schemas/ledger_row.schema.json),
+[`invoice`](schemas/invoice.schema.json), [`payment`](schemas/payment.schema.json), [`fx_row`](schemas/fx_row.schema.json),
+[`findings`](schemas/findings.schema.json) (объект submit), [`action`](schemas/action.schema.json),
+[`observation_reset`](schemas/observation_reset.schema.json), [`observation_step`](schemas/observation_step.schema.json),
+[`truth`](schemas/truth.schema.json) (закрытый), [`trajectory_line`](schemas/trajectory_line.schema.json);
+общие форматы — [`common`](schemas/common.schema.json). Проверяются офлайн собственным валидатором подмножества
+draft 2020-12 (`audit_env/schema.py`, только stdlib; неизвестные ключевые слова схемы — ошибка загрузки):
+`tests/test_schemas.py` (эпизоды, траектории, живые наблюдения, findings oracle, негативные случаи, совпадение
+схемы findings с `matcher.parse_submission`) и шаг `schemas` в `check` (матрица D01–D20 и её траектории).
+
+```python
+from audit_env.schema import SchemaStore
+SchemaStore().errors(findings_json, "findings")   # [] = валидно
+```
+
 ## Типы ошибок и канонические ответы
 
 | type | affected_ids | claimed_amount_minor / currency |
@@ -87,7 +109,7 @@ ja.score_episode(output_dir, findings_json, inspection_steps)
 | `duplicate_invoice` | оба `invoice_id` | сумма счёта / валюта счёта |
 | `payment_allocation` | `[payment_id, invoice_id]` | недоприменённая сумма / валюта платежа |
 | `fx_conversion` | `[invoice_id]` или `[payment_id]` | \|проведено − по policy\| / базовая валюта |
-| `period_cutoff` | `[invoice_id]` | сумма счёта / валюта счёта |
+| `period_cutoff` | `[invoice_id]` (счёт) или `[payment_id]` (поступление) | сумма документа / валюта документа |
 
 Сравнение точное: ID, тип и валюта — строки как есть, сумма — целое, допуск τ = 0 для всех типов
 (ожидаемые суммы вычисляются по policy без неоднозначного округления). Подробно — [DESIGN.md](DESIGN.md).
@@ -99,10 +121,17 @@ ja.score_episode(output_dir, findings_json, inspection_steps)
 | нужен эпизод | config |
 |---|---|
 | чистый, обычная сверка / разбитый платёж / возврат / повторяющиеся суммы / граница периода и TZ | `clean_basic` / `clean_split_payment` / `clean_refund` / `clean_recurring` / `clean_boundary` |
+| чистый, «почти дубль» (тот же клиент, строки и сумма, другой PO) | `clean_near_duplicate` |
+| чистый, частичный возврат переплаты (остаток — кредит клиента в 2200) | `clean_partial_refund` |
+| чистый, поступление следующего периода (опубликовано, корректно не проведено) | `clean_next_period_receipt` |
 | одна ошибка заданного типа | `type_duplicate_invoice`, `type_payment_allocation[_missing\|_partial]`, `type_fx_conversion`, `type_period_cutoff` |
+| вариант FX: счёт пересчитан по курсу даты срока оплаты | `type_fx_conversion_due_date` |
+| вариант периода: поступление следующего периода проведено последним днём текущего | `type_period_cutoff_receipt` |
 | сценарий взаимодействия 1: частичный валютный платёж на границе периода (+ курс UTC-даты) | `scenario_partial_fx_payment_boundary` |
 | сценарий взаимодействия 2: дубль счёта + платёж зачтён на дубль | `scenario_duplicate_with_misapplied_payment` |
 | смешанный | `default`, `train`, `dev`, `interacting`, `clean` |
+| верх предложенных диапазонов: ≤ 200 документов, 12 ошибок (~330–370 проводок) | `large` |
+| нагрузочный: ~1 900 проводок, ~950 документов (выше предложенных 200 документов; только для лимитов) | `stress` |
 | безвредные преобразования (внутри генератора) | `{"extends": "...", "id_salt": "x", "shuffle_rows": true}` |
 
 Основные поля: `error_counts`, `scenario_counts`, `distractor_counts` (диапазоны `[min, max]`), `clean_probability`,
@@ -130,18 +159,20 @@ python -m audit_env demo --seed 9 --config interacting                # скри
 | `oracle` | только для оценщика: отправляет эталон с доказательствами обычным submit |
 | `rules_auditor` | эталонный решатель по открытым правилам — показывает разрешимость в бюджете шагов |
 
-Последний `check`, закрытый режим, матрица D01–D20 (5 чистых, 10 с одной ошибкой, 5 взаимодействующих):
+Последний `check` (ENV_VERSION 0.3.1), закрытый режим, политики в отдельных процессах, матрица D01–D20
+(5 чистых, 10 с одной ошибкой, 5 взаимодействующих):
 
-| policy | P | R | F1 | return | steps | time, s |
-|---|---|---|---|---|---|---|
-| random | 0.000 | 0.000 | 0.050 | -0.901 | 23.6 | 0.006 |
-| reconciler | 0.056 | 0.400 | 0.147 | -0.719 | 12.8 | 0.006 |
-| flag_all | 0.000 | 0.000 | 0.000 | -1.000 | 4.3 | 0.005 |
-| oracle | 0.750 | 0.750 | 1.000 | 1.000 | 1.0 | 0.003 |
-| rules_auditor | 0.750 | 0.750 | 1.000 | 0.977 | 12.8 | 0.007 |
+| policy | P | R | F1 | return | exp. return | steps | time, s |
+|---|---|---|---|---|---|---|---|
+| random | 0.000 | 0.000 | 0.050 | -0.902 | -0.902 | 22.4 | 0.212 |
+| reconciler | 0.052 | 0.375 | 0.189 | -0.635 | -0.633 | 12.8 | 0.223 |
+| flag_all | 0.000 | 0.000 | 0.000 | -1.000 | -1.000 | 4.3 | 0.201 |
+| oracle | 0.750 | 0.750 | 1.000 | 1.000 | 1.000 | 1.0 | 0.206 |
+| rules_auditor | 0.750 | 0.750 | 1.000 | 0.976 | 0.980 | 12.8 | 0.209 |
 
-Средние по эпизодам; на чистых эпизодах P = R = 0 по определению, F1 = 1 при пустом ответе. Это диагностика,
-а не заявление о качестве модели.
+Средние по эпизодам; на чистых эпизодах P = R = 0 по определению, F1 = 1 при пустом ответе. `return` — общая
+награда §05, `exp. return` — экспериментальная (DESIGN §8). Время включает запуск процесса политики (~0,2 с).
+Это диагностика, а не заявление о качестве модели. Полный разбор — [docs/failure_analysis.md](docs/failure_analysis.md).
 
 ## Структура
 

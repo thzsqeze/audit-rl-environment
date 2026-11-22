@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "observation_reset.schema.json",
+  "title": "First observation (reset)",
+  "description": "Task, manifest, short policy, tool descriptions and the step budget. Contains no seed, truth or grader data.",
+  "type": "object",
+  "required": ["task", "manifest", "policy", "tools", "remaining_steps"],
+  "additionalProperties": false,
+  "properties": {
+    "task": {"type": "string", "minLength": 1},
+    "manifest": {"$ref": "manifest.schema.json"},
+    "policy": {"$ref": "policy.schema.json"},
+    "tools": {
+      "type": "object",
+      "required": ["list_records", "get_record", "get_document", "calculator", "submit"],
+      "additionalProperties": false,
+      "properties": {
+        "list_records": {"type": "object"}, "get_record": {"type": "object"}, "get_document": {"type": "object"},
+        "calculator": {"type": "object"}, "submit": {"type": "object"}
+      }
+    },
+    "remaining_steps": {"type": "integer", "minimum": 0, "maximum": 100}
+  }
+}

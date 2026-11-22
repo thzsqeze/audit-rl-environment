@@ -1,6 +1,6 @@
 {
   "config_id": "default",
-  "config_version": "1",
+  "config_version": "2",
   "base_currencies": [
     "USD",
     "EUR",
@@ -91,7 +91,8 @@
   "max_issues": 12,
   "fx_variants": [
     "utc_date",
-    "stale_rate"
+    "stale_rate",
+    "due_date_rate"
   ],
   "allocation_variants": [
     "missing",
@@ -99,7 +100,8 @@
   ],
   "cutoff_variants": [
     "backdated",
-    "utc_boundary"
+    "utc_boundary",
+    "receipt_next_period"
   ],
   "distractor_counts": {
     "recurring_invoice": [
@@ -125,6 +127,18 @@
     "boundary_timestamp": [
       1,
       2
+    ],
+    "near_duplicate": [
+      0,
+      1
+    ],
+    "partial_refund": [
+      0,
+      1
+    ],
+    "next_period_receipt": [
+      0,
+      1
     ]
   },
   "id_salt": "",

@@ -1,0 +1,7 @@
+{
+  "extends": "type_fx_conversion",
+  "config_id": "type_fx_conversion_due_date",
+  "fx_variants": [
+    "due_date_rate"
+  ]
+}

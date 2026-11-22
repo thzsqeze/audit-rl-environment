@@ -97,6 +97,7 @@ class ReceiptBooking:
     excess_account: str | None = None
     excess: int = 0
     rate_date: dt.date | None = None
+    ts: dt.datetime | None = None  # posting timestamp override (cut-off errors on receipts)
 
 
 @dataclass
@@ -214,7 +215,7 @@ class World:
         if plug:
             rows.append(Row("fx", ACC_FX, max(-plug, 0), max(plug, 0), pay.entity, None, pay.key,
                             self.base, abs(plug), "1"))
-        return Journal(key, pay.ts, rows)
+        return Journal(key, b.ts or pay.ts, rows)
 
     def _refund_journal(self, key: str, b: RefundBooking) -> Journal:
         pay = self.payments[b.pay]

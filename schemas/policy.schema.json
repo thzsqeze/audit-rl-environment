@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "policy.schema.json",
+  "title": "policy.json",
+  "description": "Public accounting policy (open): FX date and rate selection, period boundary, rounding, finding conventions. Produced by audit_env/generator/episode.py::_policy; also the 'policy' of the first observation.",
+  "type": "object",
+  "required": ["schema_version", "accounts", "amount_tolerance_minor", "evidence_ids", "finding_conventions", "fx",
+               "null_convention", "period", "receipts", "rounding"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "accounts": {"type": "object", "additionalProperties": {"type": "string"}},
+    "amount_tolerance_minor": {"type": "integer", "minimum": 0, "description": "Published matcher tolerance tau (0)."},
+    "evidence_ids": {"type": "string"},
+    "finding_conventions": {
+      "type": "object",
+      "required": ["duplicate_invoice", "payment_allocation", "fx_conversion", "period_cutoff"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["meaning", "affected_ids", "amount"],
+        "additionalProperties": false,
+        "properties": {"meaning": {"type": "string"}, "affected_ids": {"type": "string"}, "amount": {"type": "string"}}
+      }
+    },
+    "fx": {"type": "object", "required": ["rate_date", "quote", "fallback"], "additionalProperties": {"type": "string"}},
+    "null_convention": {"type": "string"},
+    "period": {
+      "type": "object",
+      "required": ["start", "end", "inclusive", "basis"],
+      "additionalProperties": false,
+      "properties": {
+        "start": {"$ref": "common.schema.json#/$defs/date"},
+        "end": {"$ref": "common.schema.json#/$defs/date"},
+        "inclusive": {"type": "boolean"},
+        "basis": {"type": "string"}
+      }
+    },
+    "receipts": {"type": "object", "additionalProperties": {"type": "string"}},
+    "rounding": {
+      "type": "object",
+      "required": ["mode", "unit", "formula"],
+      "additionalProperties": false,
+      "properties": {"mode": {"const": "half_up"}, "unit": {"const": "minor"}, "formula": {"type": "string"}}
+    }
+  }
+}

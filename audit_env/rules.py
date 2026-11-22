@@ -111,6 +111,8 @@ def detect_allocation(books: Books) -> list[dict]:
     for pay in books.payments:
         if pay["direction"] != "in" or not pay["invoice_refs"]:
             continue
+        if not books.in_period(books.local(pay["timestamp"])):  # not a period document: nothing to apply here
+            continue
         pid = pay["payment_id"]
         for ref in pay["invoice_refs"]:
             iid = ref["invoice_id"]
@@ -173,6 +175,19 @@ def detect_cutoff(books: Books) -> list[dict]:
             ar = [r["row_id"] for r in rows if r["account"] == AR]
             out.append(_finding("period_cutoff", [iid], inv["total_minor"], inv["currency"], [inv["doc_id"]] + ar,
                                 f"Invoice dated {day} (local) is outside the period but booked in it."))
+    receipt_rows: dict[str, list[dict]] = defaultdict(list)
+    for r in books.ledger:
+        if r["payment_id"]:
+            receipt_rows[r["payment_id"]].append(r)
+    for pid, rows in sorted(receipt_rows.items()):
+        pay = books.pay.get(pid)
+        if pay is None:
+            continue
+        day = books.local(pay["timestamp"])
+        if not books.in_period(day):
+            cash = [r["row_id"] for r in rows if r["account"] == CASH]
+            out.append(_finding("period_cutoff", [pid], pay["amount_minor"], pay["currency"], [pay["doc_id"]] + cash,
+                                f"Receipt dated {day} (local) is outside the period but booked in it."))
     return out
 
 

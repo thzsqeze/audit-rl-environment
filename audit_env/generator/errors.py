@@ -95,11 +95,14 @@ def _paid_invoices(world: World, foreign: bool | None = None) -> list[tuple[Invo
     return out
 
 
-def _wrong_rate_date(world: World, currency: str, ts: dt.datetime, variant: str) -> dt.date | None:
+def _wrong_rate_date(world: World, currency: str, ts: dt.datetime, variant: str,
+                     due: dt.datetime | None = None) -> dt.date | None:
     """A rate date that a careless bookkeeper could use, giving a different effective rate."""
     correct_rate, correct_day = world.rate_on(currency, world.local(ts))
     if variant == "utc_date":
         candidates = [ts.astimezone(dt.UTC).date()]
+    elif variant == "due_date_rate":  # invoice converted at the rate of its due date (local)
+        candidates = [world.local(due)] if due is not None else []
     else:  # stale_rate
         candidates = [correct_day - dt.timedelta(days=d) for d in world.rng.sample(range(3, 15), 6)]
     for day in candidates:
@@ -206,8 +209,10 @@ def _inject_fx_conversion(world: World, variant: str) -> list[Issue]:
     targets += [("pay", p) for _, p in _paid_invoices(world, foreign=True)]
     rng.shuffle(targets)
     for kind, obj in targets:
+        if variant == "due_date_rate" and kind != "inv":  # only invoices have a due date
+            continue
         ts = obj.issued_at if kind == "inv" else obj.ts
-        wrong = _wrong_rate_date(world, obj.currency, ts, variant)
+        wrong = _wrong_rate_date(world, obj.currency, ts, variant, obj.due_at if kind == "inv" else None)
         if wrong is None:
             continue
         amount = obj.total if kind == "inv" else obj.amount
@@ -247,8 +252,36 @@ def inject_period_cutoff(world: World, variant: str) -> list[Issue]:
         return _inject_period_cutoff(world, "backdated")
 
 
+def _inject_receipt_cutoff(world: World) -> list[Issue]:
+    """A receipt dated in the first days of the next period is booked on the last local day of this period."""
+    rng = world.rng
+    pays = sorted((p for p in world.payments.values()
+                   if "next_period_receipt" in p.tags and f"pay:{p.key}" not in world.bookings), key=lambda p: p.key)
+    if not pays:
+        raise InjectionSkipped("period_cutoff")
+    pay = rng.choice(pays)
+    inv = world.invoices[pay.refs[0][0]]
+    key = f"pay:{pay.key}"
+    posting_ts = world.local_dt(world.period_end, rng.randint(15, 20), rng.randint(0, 59))
+
+    def change() -> None:
+        world.bookings[key] = ReceiptBooking(pay.key, [(inv.key, pay.amount, world.ar_base(inv))], ts=posting_ts)
+
+    mutation = _record(world, [key], change)
+    mutation["document_local_date"] = world.local(pay.ts).isoformat()
+    world.reserved.update({inv.key, pay.key})
+    return [Issue(
+        type="period_cutoff", affected=[pay.key], amount=pay.amount, currency=pay.currency,
+        evidence=[[("doc", pay.key), ("row", key, "cash", None)],
+                  [("doc", pay.key), ("row", key, "ar", inv.key)]],
+        variant="receipt_next_period", mutation=mutation,
+    )]
+
+
 def _inject_period_cutoff(world: World, variant: str) -> list[Issue]:
     rng = world.rng
+    if variant == "receipt_next_period":
+        return _inject_receipt_cutoff(world)
     nxt = [i for i in world.invoices.values() if i.kind == "next" and i.key not in world.reserved]
     if variant == "utc_boundary":
         nxt = [i for i in nxt if "utc_boundary_candidate" in i.tags]

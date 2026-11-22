@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trajectory_line.schema.json",
+  "title": "trajectories.jsonl line",
+  "description": "One transition. step 0 is the reset (action null). Fields required by section 09: episode_id, step, action, observation, reward, terminated, truncated. 'policy' and 'info' are documented extras. In closed mode reward is 0 and info is {}. Actions are recorded as sent by the policy, so they are not required to be valid.",
+  "type": "object",
+  "required": ["episode_id", "step", "action", "observation", "reward", "terminated", "truncated"],
+  "additionalProperties": false,
+  "properties": {
+    "policy": {"type": "string"},
+    "episode_id": {"$ref": "common.schema.json#/$defs/id"},
+    "step": {"type": "integer", "minimum": 0, "maximum": 100},
+    "action": {"type": ["object", "null"]},
+    "observation": {"oneOf": [{"$ref": "observation_reset.schema.json"}, {"$ref": "observation_step.schema.json"}]},
+    "reward": {"type": "number", "minimum": -1, "maximum": 1},
+    "terminated": {"type": "boolean"},
+    "truncated": {"type": "boolean"},
+    "info": {"type": "object"}
+  }
+}

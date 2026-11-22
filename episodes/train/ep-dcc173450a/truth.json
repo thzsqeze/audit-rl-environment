@@ -1,0 +1,115 @@
+{
+  "amount_tolerance_minor": 0,
+  "episode_id": "ep-dcc173450a",
+  "issues": [
+    {
+      "affected_ids": [
+        "INV-NLL82S",
+        "INV-W9JW4P"
+      ],
+      "currency": "KWD",
+      "evidence_sets": [
+        [
+          "DOC-M9T9U3",
+          "DOC-T2J4LP",
+          "GL-NAX2JECE",
+          "GL-VGYB75UY"
+        ],
+        [
+          "DOC-M9T9U3",
+          "DOC-T2J4LP",
+          "GL-NE68DPT8",
+          "GL-XHKFJ2PU"
+        ]
+      ],
+      "expected_amount_minor": 1303800,
+      "issue_id": "ISS-01",
+      "scenario": null,
+      "type": "duplicate_invoice",
+      "variant": "copy"
+    },
+    {
+      "affected_ids": [
+        "INV-MUL2C9"
+      ],
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "DOC-Z6HXRP",
+          "FX:2026-02-02:KWD:USD",
+          "GL-Q98AGR5Y"
+        ],
+        [
+          "DOC-Z6HXRP",
+          "FX:2026-02-02:KWD:USD",
+          "GL-J437W8FK"
+        ]
+      ],
+      "expected_amount_minor": 5260,
+      "issue_id": "ISS-02",
+      "scenario": null,
+      "type": "fx_conversion",
+      "variant": "stale_rate"
+    },
+    {
+      "affected_ids": [
+        "INV-547KKY",
+        "PMT-KNAENA"
+      ],
+      "currency": "GBP",
+      "evidence_sets": [
+        [
+          "DOC-A65QH8",
+          "GL-ECSA53QM"
+        ]
+      ],
+      "expected_amount_minor": 857291,
+      "issue_id": "ISS-03",
+      "scenario": null,
+      "type": "payment_allocation",
+      "variant": "partial"
+    },
+    {
+      "affected_ids": [
+        "INV-2EJBNX"
+      ],
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "DOC-EAJ2ZP",
+          "GL-3V4UKQTU"
+        ],
+        [
+          "DOC-EAJ2ZP",
+          "GL-J58TX86J"
+        ]
+      ],
+      "expected_amount_minor": 234900,
+      "issue_id": "ISS-04",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "backdated"
+    },
+    {
+      "affected_ids": [
+        "INV-VA3P5C"
+      ],
+      "currency": "USD",
+      "evidence_sets": [
+        [
+          "DOC-65TB8F",
+          "GL-KWDXS9EZ"
+        ],
+        [
+          "DOC-65TB8F",
+          "GL-6C4VEZHU"
+        ]
+      ],
+      "expected_amount_minor": 674100,
+      "issue_id": "ISS-05",
+      "scenario": null,
+      "type": "period_cutoff",
+      "variant": "backdated"
+    }
+  ]
+}

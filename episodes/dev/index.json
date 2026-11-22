@@ -1,72 +1,72 @@
 {
-  "env_version": "0.2.0",
+  "env_version": "0.3.1",
   "episodes": [
     {
-      "episode_id": "ep-080f4bb662",
+      "episode_id": "ep-0880141b2c",
       "seed": 1000,
       "config": "dev",
-      "issues": 8,
-      "ledger_rows": 215,
-      "documents": 109
+      "issues": 0,
+      "ledger_rows": 247,
+      "documents": 126
     },
     {
-      "episode_id": "ep-029359341d",
+      "episode_id": "ep-e9b1c06656",
       "seed": 1001,
       "config": "dev",
-      "issues": 7,
-      "ledger_rows": 230,
-      "documents": 112
+      "issues": 6,
+      "ledger_rows": 286,
+      "documents": 143
     },
     {
-      "episode_id": "ep-7a42d862d7",
+      "episode_id": "ep-6eea88ac52",
       "seed": 1002,
       "config": "dev",
-      "issues": 3,
-      "ledger_rows": 224,
-      "documents": 114
+      "issues": 0,
+      "ledger_rows": 289,
+      "documents": 145
     },
     {
-      "episode_id": "ep-20387c9727",
+      "episode_id": "ep-2a540ca84f",
       "seed": 1003,
       "config": "dev",
-      "issues": 4,
-      "ledger_rows": 204,
-      "documents": 104
+      "issues": 7,
+      "ledger_rows": 315,
+      "documents": 154
     },
     {
-      "episode_id": "ep-f7083cb048",
+      "episode_id": "ep-7785ad1bfb",
       "seed": 1004,
       "config": "dev",
-      "issues": 7,
-      "ledger_rows": 271,
-      "documents": 135
+      "issues": 4,
+      "ledger_rows": 282,
+      "documents": 144
     },
     {
-      "episode_id": "ep-d55c253cba",
+      "episode_id": "ep-b8a651d79e",
       "seed": 1005,
       "config": "dev",
-      "issues": 8,
-      "ledger_rows": 226,
-      "documents": 115
+      "issues": 5,
+      "ledger_rows": 275,
+      "documents": 140
     },
     {
-      "episode_id": "ep-db80c318ab",
+      "episode_id": "ep-5338af1dce",
       "seed": 1006,
       "config": "dev",
-      "issues": 0,
+      "issues": 6,
       "ledger_rows": 269,
       "documents": 138
     },
     {
-      "episode_id": "ep-2de4379229",
+      "episode_id": "ep-58ec9582bf",
       "seed": 1007,
       "config": "dev",
-      "issues": 8,
-      "ledger_rows": 271,
-      "documents": 138
+      "issues": 6,
+      "ledger_rows": 308,
+      "documents": 152
     },
     {
-      "episode_id": "ep-f40f05f821",
+      "episode_id": "ep-36cd4eec0a",
       "seed": 1008,
       "config": {
         "extends": "dev",
@@ -74,11 +74,11 @@
         "clean_probability": 1.0
       },
       "issues": 0,
-      "ledger_rows": 288,
-      "documents": 148
+      "ledger_rows": 233,
+      "documents": 118
     },
     {
-      "episode_id": "ep-9dcd3e76f2",
+      "episode_id": "ep-031a64607c",
       "seed": 1009,
       "config": {
         "extends": "dev",
@@ -95,9 +95,9 @@
           ]
         }
       },
-      "issues": 10,
-      "ledger_rows": 318,
-      "documents": 154
+      "issues": 7,
+      "ledger_rows": 277,
+      "documents": 137
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fx_row.schema.json",
+  "title": "fx.csv row",
+  "description": "1 source_currency = rate target_currency on date. get_record id: 'FX:<date>:<source>:<target>'. Rates stay decimal strings (never binary floats).",
+  "type": "object",
+  "required": ["date", "source_currency", "target_currency", "rate"],
+  "additionalProperties": false,
+  "properties": {
+    "date": {"$ref": "common.schema.json#/$defs/date"},
+    "source_currency": {"$ref": "common.schema.json#/$defs/currency"},
+    "target_currency": {"$ref": "common.schema.json#/$defs/currency"},
+    "rate": {"$ref": "common.schema.json#/$defs/decimal_string"}
+  }
+}

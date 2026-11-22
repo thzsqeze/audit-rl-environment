@@ -75,13 +75,14 @@ def cmd_run(args: argparse.Namespace) -> int:
     items = load_split(args.split) if args.split else [{"seed": s, "config": args.config} for s in args.seeds]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    summary: dict[str, Any] = {"env_version": ENV_VERSION, "mode": args.mode, "policies": {}}
+    summary: dict[str, Any] = {"env_version": ENV_VERSION, "mode": args.mode, "isolated": args.isolated,
+                               "policies": {}}
     with open(out / "trajectories.jsonl", "w", encoding="utf-8") as traj_fh, \
             open(out / "grades.jsonl", "w", encoding="utf-8") as grade_fh:
         for name in args.policies.split(","):
             reports = []
             for item in items:
-                traj, report = run_episode(name, item["seed"], item["config"], args.mode)
+                traj, report = run_episode(name, item["seed"], item["config"], args.mode, isolated=args.isolated)
                 reports.append(report)
                 for line in traj:
                     traj_fh.write(json.dumps({"policy": name, **line}, sort_keys=True) + "\n")
@@ -90,6 +91,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary["policies"], indent=2))
     return 0
+
+
+def cmd_analyze(args: argparse.Namespace) -> int:
+    from audit_env.analyze import write_report
+
+    result = write_report(args.run, args.episodes, args.out, args.title)
+    print(f"{args.out}: {sum(len(r) for r in result['per_policy'].values())} graded episodes, "
+          f"{sum(result['fp'].values())} FP, {sum(result['fn'].values())} FN")
+    return 1 if result["unknown_episodes"] else 0
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
@@ -118,7 +128,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 def _check_episodes(results: dict) -> None:
     items = load_split("train") + load_split("dev")
-    presets = sorted({c for _, c, _ in JURY_MATRIX} | {"default", "interacting"})
+    presets = sorted(p.stem for p in CONFIG_DIR.glob("*.json") if p.stem != "splits")  # every documented preset
     items += [{"seed": s, "config": c} for c in presets for s in range(5000, 5005)]
     failures = []
     for item in items:
@@ -162,13 +172,17 @@ def _materialize(items: list[dict], root: Path) -> list[dict]:
 def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
     per_policy, leaks = {}, []
     out.mkdir(parents=True, exist_ok=True)
-    with open(out / "trajectories.jsonl", "w", encoding="utf-8") as fh:
+    with open(out / "trajectories.jsonl", "w", encoding="utf-8") as fh, \
+            open(out / "grades.jsonl", "w", encoding="utf-8") as grade_fh:
         for name in (*BASELINES, "rules_auditor"):
             reports = []
             for item in items:
-                traj, report = run_episode(name, item["seed"], item["env_config"])
+                # closed run, policy in a separate locked-down process (jury "Граница доступа")
+                traj, report = run_episode(name, item["seed"], item["env_config"], isolated=True)
                 report["kind"] = item["kind"]
+                report["jury_id"] = item["id"]
                 reports.append(report)
+                grade_fh.write(json.dumps(report, sort_keys=True) + "\n")  # evaluator-side file
                 for line in traj:
                     text = json.dumps(line["observation"]) + json.dumps(line.get("info", {}))
                     hits = [m for m in LEAK_MARKERS if m in text]
@@ -189,9 +203,60 @@ def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
         "no_invalid_baseline_submissions": all(p["all"]["invalid_submissions"] == 0 for p in per_policy.values()),
         "within_time_limit": all(p["all"]["max_wall_time_s"] < 60 for p in per_policy.values()),
         "no_leaks_in_closed_mode": not leaks,
+        "policies_ran_isolated": all(p["all"]["isolated"] == p["all"]["episodes"] for p in per_policy.values()),
+        "no_policy_failures": all(p["all"]["truncated"] == 0 for p in per_policy.values()),
     }
     results["baselines"] = {"summary": per_policy, "checks": checks, "leaks": leaks[:20],
                             "passed": all(checks.values())}
+
+
+def _check_analysis(results: dict, out: Path, items: list[dict]) -> None:
+    """Measured failure analysis of the closed D01-D20 run -> <out>/failure_analysis.md."""
+    from audit_env.analyze import analyze, render
+    from audit_env.generator import Episode
+
+    episodes = {Episode.load(i["dir"]).episode_id: Path(i["dir"]) for i in items}
+    result = analyze(out, episodes)
+    text = render(result, "Failure analysis: jury-style matrix D01-D20, closed mode, isolated policies")
+    with open(out / "failure_analysis.md", "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+    covered = {p: len(rs) for p, rs in result["per_policy"].items()}
+    results["analysis"] = {"report": str(out / "failure_analysis.md"), "episodes_per_policy": covered,
+                           "passed": not result["unknown_episodes"] and set(covered.values()) == {len(items)}}
+
+
+def _check_schemas(results: dict, out: Path, items: list[dict]) -> None:
+    """Validate the D01-D20 episode files and the closed-run trajectories against schemas/."""
+    from audit_env.generator import Episode
+    from audit_env.schema import SchemaStore
+
+    store = SchemaStore()
+    errors: list[str] = []
+
+    def check(instance: Any, name: str, where: str) -> None:
+        errs = store.errors(instance, name)
+        if errs and len(errors) < 20:
+            errors.append(f"{where}: {name}: {errs[0]}")
+
+    checked = 0
+    for item in items:
+        ep = Episode.load(item["dir"])
+        for name, value in (("manifest", ep.manifest), ("policy", ep.policy), ("truth", ep.truth)):
+            check(value, name, item["id"])
+        for name, rows in (("ledger_row", ep.ledger), ("invoice", ep.invoices), ("payment", ep.payments),
+                           ("fx_row", ep.fx)):
+            for row in rows:
+                check(row, name, item["id"])
+        checked += 1
+    lines = 0
+    with open(out / "trajectories.jsonl", encoding="utf-8") as fh:
+        for n, line in enumerate(fh, start=1):
+            record = json.loads(line)
+            check(record, "trajectory_line", f"trajectories.jsonl:{n}")
+            if record["action"] is not None:
+                check(record["action"], "action", f"trajectories.jsonl:{n}")
+            lines += 1
+    results["schemas"] = {"episodes": checked, "trajectory_lines": lines, "errors": errors, "passed": not errors}
 
 
 def _replay(config: Any, actions: list[dict]) -> str:
@@ -278,6 +343,8 @@ def cmd_check(args: argparse.Namespace) -> int:
         results["jury_matrix"] = [{k: i[k] for k in ("id", "seed", "config", "kind")} for i in items]
         steps = [("tests", _check_tests), ("episode_validation", _check_episodes),
                  ("baselines", lambda r: _check_baselines(r, out, items)),
+                 ("schemas", lambda r: _check_schemas(r, out, items)),
+                 ("analysis", lambda r: _check_analysis(r, out, items)),
                  ("paired_checks", lambda r: _check_pairs(r, items, Path(tmp) / "pairs"))]
         if args.skip_tests:
             steps = steps[1:]
@@ -289,11 +356,13 @@ def cmd_check(args: argparse.Namespace) -> int:
     results["elapsed_s"] = round(time.time() - started, 2)
     (out / "check_report.json").write_text(json.dumps(results, indent=2, default=str) + "\n")
     print("\nBaseline diagnostics, closed mode, jury-style matrix D01-D20 (5 clean, 10 single, 5 interacting):")
-    print(f"{'policy':<14}{'P':>7}{'R':>7}{'F1':>7}{'return':>9}{'steps':>7}{'time_s':>8}")
+    print(f"{'policy':<14}{'P':>7}{'R':>7}{'F1':>7}{'return':>9}{'exp_ret':>9}{'steps':>7}{'time_s':>8}")
     for name, s in results["baselines"]["summary"].items():
         a = s["all"]
         print(f"{name:<14}{a['mean_precision']:>7.3f}{a['mean_recall']:>7.3f}{a['mean_f1']:>7.3f}"
-              f"{a['mean_reward']:>9.3f}{a['mean_steps']:>7.1f}{a['mean_wall_time_s']:>8.3f}")
+              f"{a['mean_reward']:>9.3f}{a['mean_experimental_reward']:>9.3f}{a['mean_steps']:>7.1f}"
+              f"{a['mean_wall_time_s']:>8.3f}")
+    print("return = shared reward (section 05); exp_ret = experimental reward, reported separately")
     print(f"\npaired checks: {results['paired_checks']['passed_count']}/20 passed")
     print(f"report: {out / 'check_report.json'}")
     ok = all(results[n]["passed"] is not False for n, _ in steps)
@@ -334,12 +403,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--config", default="default")
     p.add_argument("--mode", choices=["train", "closed"], default="train")
     p.add_argument("--out", default="runs/latest")
+    p.add_argument("--isolated", action="store_true", help="run each policy in a separate locked-down process")
     p.set_defaults(fn=cmd_run)
 
     p = sub.add_parser("check", help="single verification command (tests, data, reward, reproducibility)")
     p.add_argument("--out", default="reports")
     p.add_argument("--skip-tests", action="store_true")
     p.set_defaults(fn=cmd_check)
+
+    p = sub.add_parser("analyze", help="measured failure analysis of a run (grades.jsonl + trajectories.jsonl)")
+    p.add_argument("--run", required=True, help="directory with grades.jsonl and trajectories.jsonl")
+    p.add_argument("--episodes", nargs="+", required=True, help="episode directories/roots with closed files")
+    p.add_argument("--out", default="reports/failure_analysis.md")
+    p.add_argument("--title", default="Failure analysis")
+    p.set_defaults(fn=cmd_analyze)
 
     p = sub.add_parser("serve", help="JSON-lines stdio server (agent in a separate process)")
     p.add_argument("--mode", choices=["train", "closed"], default="closed")

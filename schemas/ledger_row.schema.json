@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger_row.schema.json",
+  "title": "ledger.csv row",
+  "description": "One posting as returned by list_records/get_record (table 'ledger'). In ledger.csv integers are written as digits and null as the string 'null'; Episode.load restores these JSON types. Fields after payment_id are documented extras.",
+  "type": "object",
+  "required": ["row_id", "journal_id", "timestamp", "account", "debit_minor", "credit_minor", "currency", "entity_id",
+               "invoice_id", "payment_id", "txn_currency", "txn_amount_minor", "fx_rate"],
+  "additionalProperties": false,
+  "properties": {
+    "row_id": {"$ref": "common.schema.json#/$defs/id"},
+    "journal_id": {"$ref": "common.schema.json#/$defs/id"},
+    "timestamp": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "account": {"type": "string", "pattern": "^[0-9]{4}$"},
+    "debit_minor": {"$ref": "common.schema.json#/$defs/minor_units"},
+    "credit_minor": {"$ref": "common.schema.json#/$defs/minor_units"},
+    "currency": {"$ref": "common.schema.json#/$defs/currency", "description": "Book (base) currency of the posting."},
+    "entity_id": {"$ref": "common.schema.json#/$defs/nullable_id"},
+    "invoice_id": {"$ref": "common.schema.json#/$defs/nullable_id"},
+    "payment_id": {"$ref": "common.schema.json#/$defs/nullable_id"},
+    "txn_currency": {"$ref": "common.schema.json#/$defs/currency"},
+    "txn_amount_minor": {"$ref": "common.schema.json#/$defs/minor_units"},
+    "fx_rate": {"$ref": "common.schema.json#/$defs/decimal_string"}
+  }
+}
