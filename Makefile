@@ -1,7 +1,7 @@
 PY ?= python3
 IMAGE ?= audit-rl-env
 
-.PHONY: install lint test check episodes trajectories demo docker-build docker-check
+.PHONY: install lint test check analysis episodes trajectories demo docker-build docker-check
 
 install:
 	$(PY) -m pip install -r requirements-dev.txt && $(PY) -m pip install --no-deps -e .
@@ -14,6 +14,9 @@ test:
 
 check:
 	$(PY) -m audit_env check
+
+analysis: check
+	mkdir -p docs && cp reports/failure_analysis.md docs/failure_analysis.md
 
 episodes:
 	rm -rf episodes && $(PY) -m audit_env generate --split train --out episodes/train && \

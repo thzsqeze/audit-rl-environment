@@ -93,6 +93,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_analyze(args: argparse.Namespace) -> int:
+    from audit_env.analyze import write_report
+
+    result = write_report(args.run, args.episodes, args.out, args.title)
+    print(f"{args.out}: {sum(len(r) for r in result['per_policy'].values())} graded episodes, "
+          f"{sum(result['fp'].values())} FP, {sum(result['fn'].values())} FN")
+    return 1 if result["unknown_episodes"] else 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     from audit_env.server import serve
 
@@ -163,14 +172,17 @@ def _materialize(items: list[dict], root: Path) -> list[dict]:
 def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
     per_policy, leaks = {}, []
     out.mkdir(parents=True, exist_ok=True)
-    with open(out / "trajectories.jsonl", "w", encoding="utf-8") as fh:
+    with open(out / "trajectories.jsonl", "w", encoding="utf-8") as fh, \
+            open(out / "grades.jsonl", "w", encoding="utf-8") as grade_fh:
         for name in (*BASELINES, "rules_auditor"):
             reports = []
             for item in items:
                 # closed run, policy in a separate locked-down process (jury "Граница доступа")
                 traj, report = run_episode(name, item["seed"], item["env_config"], isolated=True)
                 report["kind"] = item["kind"]
+                report["jury_id"] = item["id"]
                 reports.append(report)
+                grade_fh.write(json.dumps(report, sort_keys=True) + "\n")  # evaluator-side file
                 for line in traj:
                     text = json.dumps(line["observation"]) + json.dumps(line.get("info", {}))
                     hits = [m for m in LEAK_MARKERS if m in text]
@@ -196,6 +208,21 @@ def _check_baselines(results: dict, out: Path, items: list[dict]) -> None:
     }
     results["baselines"] = {"summary": per_policy, "checks": checks, "leaks": leaks[:20],
                             "passed": all(checks.values())}
+
+
+def _check_analysis(results: dict, out: Path, items: list[dict]) -> None:
+    """Measured failure analysis of the closed D01-D20 run -> <out>/failure_analysis.md."""
+    from audit_env.analyze import analyze, render
+    from audit_env.generator import Episode
+
+    episodes = {Episode.load(i["dir"]).episode_id: Path(i["dir"]) for i in items}
+    result = analyze(out, episodes)
+    text = render(result, "Failure analysis: jury-style matrix D01-D20, closed mode, isolated policies")
+    with open(out / "failure_analysis.md", "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+    covered = {p: len(rs) for p, rs in result["per_policy"].items()}
+    results["analysis"] = {"report": str(out / "failure_analysis.md"), "episodes_per_policy": covered,
+                           "passed": not result["unknown_episodes"] and set(covered.values()) == {len(items)}}
 
 
 def _check_schemas(results: dict, out: Path, items: list[dict]) -> None:
@@ -317,6 +344,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         steps = [("tests", _check_tests), ("episode_validation", _check_episodes),
                  ("baselines", lambda r: _check_baselines(r, out, items)),
                  ("schemas", lambda r: _check_schemas(r, out, items)),
+                 ("analysis", lambda r: _check_analysis(r, out, items)),
                  ("paired_checks", lambda r: _check_pairs(r, items, Path(tmp) / "pairs"))]
         if args.skip_tests:
             steps = steps[1:]
@@ -380,6 +408,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="reports")
     p.add_argument("--skip-tests", action="store_true")
     p.set_defaults(fn=cmd_check)
+
+    p = sub.add_parser("analyze", help="measured failure analysis of a run (grades.jsonl + trajectories.jsonl)")
+    p.add_argument("--run", required=True, help="directory with grades.jsonl and trajectories.jsonl")
+    p.add_argument("--episodes", nargs="+", required=True, help="episode directories/roots with closed files")
+    p.add_argument("--out", default="reports/failure_analysis.md")
+    p.add_argument("--title", default="Failure analysis")
+    p.set_defaults(fn=cmd_analyze)
 
     p = sub.add_parser("serve", help="JSON-lines stdio server (agent in a separate process)")
     p.add_argument("--mode", choices=["train", "closed"], default="closed")
